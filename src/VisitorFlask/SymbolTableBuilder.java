@@ -90,20 +90,58 @@ public class SymbolTableBuilder extends Visitor {
 
         Scope targetScope = isGlobal ? globalScope : currentScope;
 
+        // 🔥 تسجيل جميع التعريفات (حتى المكررة) مباشرة في الـ Scope
+        targetScope.allDeclarations.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol.line);
+
+        // التحقق من التكرار في نفس النطاق
         Symbol existing = targetScope.lookupCurrent(symbol.name);
         if (existing == null) {
             targetScope.addSymbol(symbol);
-            String scopeType = targetScope == globalScope ? "global" : "local";
             recordSymbolUsage(symbol);
 
             if (symbol instanceof VariableSymbol) {
                 VariableSymbol var = (VariableSymbol) symbol;
                 if (COMPLEX_TYPES.contains(var.type)) {
+                    // complex type handling
                 }
             }
+        } else {
+            // 🔥 هذا خطأ Scope - سجله في جدول الأخطاء
+            System.err.println("[SCOPE ERROR] Variable '" + symbol.name +
+                    "' already defined in scope '" + targetScope.name +
+                    "' at line " + symbol.line +
+                    " (first at line " + existing.line + ")");
         }
     }
-
+//
+//    private void addSymbolToProperScope(Symbol symbol) {
+//        boolean isGlobal = false;
+//
+//        if (currentScope == globalScope || currentScope.name.equals("program")) {
+//            isGlobal = true;
+//        }
+//
+//        if (symbol instanceof FunctionSymbol && isDecoratedFunction()) {
+//            isGlobal = true;
+//        }
+//
+//        Scope targetScope = isGlobal ? globalScope : currentScope;
+//
+//        Symbol existing = targetScope.lookupCurrent(symbol.name);
+//        if (existing == null) {
+//            targetScope.addSymbol(symbol);
+//            String scopeType = targetScope == globalScope ? "global" : "local";
+//            recordSymbolUsage(symbol);
+//
+//            if (symbol instanceof VariableSymbol) {
+//                VariableSymbol var = (VariableSymbol) symbol;
+//                if (COMPLEX_TYPES.contains(var.type)) {
+//                }
+//            }
+//        }
+//    }
+//
+//
     private boolean isDecoratedFunction() {
         for (int i = scopeStack.size() - 1; i >= 0; i--) {
             if (scopeStack.get(i).name.contains("decorated")) {

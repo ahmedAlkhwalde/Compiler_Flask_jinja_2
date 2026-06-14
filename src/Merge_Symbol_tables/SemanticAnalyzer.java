@@ -394,6 +394,8 @@ package Merge_Symbol_tables;
 
 
 
+
+
 import ASTFlask.*;
 import ASTFlask.SymbolTable.*;
 import AST_HTMLCSSJINJA.*;
@@ -767,34 +769,137 @@ public class SemanticAnalyzer {
     //  الخطأ 3: Scope error (خطأ في النطاق)
     // ══════════════════════════════════════════════════════════════
 
-    public void detectScopeErrors() {
-        System.out.println("  ▶ [الخطأ 3] التحقق من أخطاء النطاق...");
-        int errorCount = 0;
 
-        Map<String, Integer> varDefinitions = new HashMap<>();
-        for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
-            if ((sym.kind == SymbolTable.SymbolKind.VARIABLE || sym.kind == SymbolTable.SymbolKind.LIST) &&
-                    !sym.name.equals("app") && !sym.name.equals("UPLOAD_FOLDER") &&
-                    !sym.type.equals("module") && !sym.type.equals("imported")) {
-                if (varDefinitions.containsKey(sym.name)) {
-                    table.addWarning(String.format(
-                            "[Scope Warning - السطر %d] المتغير '%s' أعيد تعريفه (تم تعريفه أول مرة في السطر %d)",
-                            sym.lineNumber, sym.name, varDefinitions.get(sym.name)
-                    ));
-                    errorCount++;
-                } else {
-                    varDefinitions.put(sym.name, sym.lineNumber);
+    // ══════════════════════════════════════════════════════════════
+//  الخطأ 3: Scope error (خطأ في النطاق) - الحل النهائي
+// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+//  الخطأ 3: Scope error (خطأ في النطاق) - يستخدم الـ builder الأصلي
+// ══════════════════════════════════════════════════════════════
+
+
+
+
+    // ── دالة مساعدة: تجمع كل الإعلانات من كل النطاقات ─────────────
+    private void collectOccurrences(
+            Scope scope,
+            String scopeName,
+            Map<String, List<ScopeOccurrence>> result,
+            Set<Scope> visited,
+            SymbolTableBuilder builder) {
+
+        if (scope == null || visited.contains(scope)) return;
+        visited.add(scope);
+
+        for (ASTFlask.SymbolTable.Symbol sym : scope.symbols.values()) {
+            // تجاهل المدمجة والمستوردة
+            if (sym.name.equals("True") || sym.name.equals("False") ||
+                    sym.name.equals("None") || sym.name.equals("__name__")) continue;
+            if (sym instanceof VariableSymbol) {
+                VariableSymbol v = (VariableSymbol) sym;
+                if (v.type.equals("Module") || v.type.equals("imported") ||
+                        v.type.equals("module") || v.type.equals("star_import")) continue;
+            }
+
+            result.computeIfAbsent(sym.name, k -> new ArrayList<>())
+                    .add(new ScopeOccurrence(sym.name, scopeName, sym.line));
+
+            // ادخل في نطاق الدوال
+            if (sym instanceof FunctionSymbol) {
+                FunctionSymbol func = (FunctionSymbol) sym;
+                if (func.functionScope != null) {
+                    collectOccurrences(func.functionScope,
+                            "function:" + func.name, result, visited, builder);
                 }
             }
         }
-
-        if (errorCount == 0) {
-            System.out.println("  ✓ لا توجد أخطاء في النطاق");
-        } else {
-            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في النطاق");
-        }
-        System.out.println();
     }
+
+
+// ضع هذا في SemanticAnalyzer.java — استبدل detectScopeErrors كاملاً
+public void detectScopeErrors() {
+    System.out.println("  ▶ [الخطأ 3] التحقق من أخطاء النطاق...");
+    int errorCount = 0;
+
+    if (flaskSymbolBuilder != null) {
+        Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
+
+        // مجموعة لتتبع الأسماء التي تم التحقق منها (لتجنب التكرار)
+        Set<String> processedNames = new HashSet<>();
+
+        // استخدام الـ allDeclarations الجديد
+        for (Map.Entry<String, List<Integer>> entry : globalScope.allDeclarations.entrySet()) {
+            String varName = entry.getKey();
+            List<Integer> lines = entry.getValue();
+
+            // تجاهل الثوابت المضمنة
+            if (varName.equals("True") || varName.equals("False") ||
+                    varName.equals("None") || varName.equals("__name__")) {
+                continue;
+            }
+
+            // 🔥 تجاهل أسماء الدوال (ليست أخطاء نطاق حقيقية)
+            boolean isFunction = false;
+            for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
+                if (sym instanceof FunctionSymbol && sym.name.equals(varName)) {
+                    isFunction = true;
+                    break;
+                }
+            }
+            if (isFunction) {
+                continue; // الدوال يمكن إعادة تعريفها في نطاقات مختلفة
+            }
+
+            // 🔥 تجاهل المتغيرات المستوردة
+            boolean isImported = false;
+            for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
+                if (sym instanceof VariableSymbol) {
+                    VariableSymbol var = (VariableSymbol) sym;
+                    if (var.name.equals(varName) &&
+                            (var.type.equals("module") || var.type.equals("imported"))) {
+                        isImported = true;
+                        break;
+                    }
+                }
+            }
+            if (isImported) {
+                continue;
+            }
+
+            // 🔥 إزالة الأسطر المكررة (نفس السطر يظهر مرتين في بعض الحالات)
+            Set<Integer> uniqueLines = new LinkedHashSet<>(lines);
+            if (uniqueLines.size() > 1) {
+                // إزالة التكرارات (أخطاء Scope حقيقية)
+                List<Integer> sortedLines = new ArrayList<>(uniqueLines);
+                Collections.sort(sortedLines);
+
+                int firstLine = sortedLines.get(0);
+                for (int i = 1; i < sortedLines.size(); i++) {
+                    // تجنب إضافة نفس الخطأ مرتين
+                    String errorKey = varName + "_" + firstLine + "_" + sortedLines.get(i);
+                    if (!processedNames.contains(errorKey)) {
+                        processedNames.add(errorKey);
+                        table.addError(String.format(
+                                "[Scope Error - السطر %d] المتغير '%s' أعيد تعريفه في نفس النطاق (تم تعريفه أول مرة في السطر %d). هذا غير مسموح به في Python.",
+                                sortedLines.get(i), varName, firstLine
+                        ));
+                        errorCount++;
+                    }
+                }
+            }
+        }
+    }
+
+    if (errorCount == 0) {
+        System.out.println("  ✓ لا توجد أخطاء في النطاق");
+    } else {
+        System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في النطاق");
+    }
+    System.out.println();
+}
+
+
+
 
     // ══════════════════════════════════════════════════════════════
     //  الخطأ 4: Type mismatch (عدم تطابق الأنواع) - معدل بالكامل
@@ -960,4 +1065,18 @@ public class SemanticAnalyzer {
         System.out.println("   ─────────────────────────");
         System.out.println("   ✅ جميع الأخطاء الخمسة تم التعامل معها");
     }
+
+
+    private static class ScopeOccurrence {
+        public final String varName;
+        public final String scopeName;
+        public final int    line;
+
+        public ScopeOccurrence(String varName, String scopeName, int line) {
+            this.varName   = varName;
+            this.scopeName = scopeName;
+            this.line      = line;
+        }
+    }
+
 }

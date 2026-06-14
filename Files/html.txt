@@ -7,6 +7,11 @@
 <body style="font-family: sans-serif; background: #f0f0f0; direction: rtl; text-align: center;">
 <div class="container" style="width: 90%; margin: auto; padding-top: 40px;">
 
+{# اختبار الخطأ رقم 4: Type Mismatch #}
+{% for item in not_a_list %}
+    <p>Test: {{ item }}</p>
+{% endfor %}
+
 {% if add_form %}
     <div class="form-box" style="width: 320px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #aaa; text-align: right;">
         <h2>إضافة منتج جديد</h2>
@@ -38,7 +43,8 @@
 {% else %}
     <a href="/add"><button style="padding: 10px 20px; background: #00a1ff; color: white; border: none; border-radius: 8px; cursor: pointer;">إضافة منتج جديد</button></a>
     <br/><br/>
-    {% for p in products %}
+    {# اختبار الخطأ رقم 2: Spelling Error - productss بدل products #}
+    {% for p in productss %}
         <div class="product-card" style="width: 220px; background: white; padding: 15px; border-radius: 10px; margin: 15px; display: inline-block; box-shadow: 0 0 7px #aaa;">
             <img src="{{ p.image_url }}" style="width: 100%; border-radius: 10px;"/>
             <h3>{{ p.name }}</h3>
