@@ -273,6 +273,10 @@ public class SymbolTableBuilder extends Visitor {
         }
     }
 
+    public Scope getGlobalSymbolTable() {
+        return globalScope;
+    }
+
     private int findMatchingBrace(String text, int start) {
         int depth = 0;
         for (int i = start; i < text.length(); i++) {
