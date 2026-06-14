@@ -17,7 +17,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # اختبار الخطأ رقم 3: Scope Error في النطاق العام
 global_duplicate = 1
 global_duplicate = 2
-
+var x= 5+"a"
 # اختبار الخطأ رقم 4: Type Mismatch - متغير ليس list
 not_a_list = "هذا نص وليس قائمة"
 

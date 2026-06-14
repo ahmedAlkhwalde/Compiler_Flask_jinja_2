@@ -2182,7 +2182,6 @@
 
 
 
-
 package Merge_Symbol_tables;
 
 import ASTFlask.*;
@@ -2193,25 +2192,24 @@ import VISITORJINJA.ST.Symbol;
 import VisitorFlask.SymbolTableBuilder;
 
 import java.util.*;
+import java.util.regex.*;
 
 /**
  * المحلل الدلالي - يحلل الشجرتين ويسجّل كل الرموز في جدول موحّد
  *
- * يحتوي على 50+ خطأ دلالياً مقسماً إلى 7 مجموعات:
- *
- * المجموعة 1: أخطاء Flask الأساسية (1-10)
- * المجموعة 2: أخطاء الطلبات (Request Errors) (11-15)
- * المجموعة 3: أخطاء Jinja2 الأساسية (16-25)
- * المجموعة 4: أخطاء Runtime (26-35)
- * المجموعة 5: أخطاء قاعدة البيانات (36-40)
- * المجموعة 6: أخطاء الجلسة (Session Errors) (41-45)
- * المجموعة 7: أخطاء متقدمة (46-50+)
+ * يحتوي على 5 أخطاء دلالية رئيسية:
+ * 1. Undefined error (خطأ الرمز غير المعرف)
+ * 2. Spelling error (خطأ إملائي في اسم المتغير)
+ * 3. Scope error (خطأ في النطاق)
+ * 4. Type mismatch (عدم تطابق الأنواع) - يشمل عمليات النص + الرقم والتكرار على غير list
+ * 5. Missing Flask Variable (متغير Flask مفقود)
  */
 public class SemanticAnalyzer {
 
     private final SymbolTable table;
     private final SymbolTableBuilder flaskSymbolBuilder;
     private final HtmlCssJinjaSymbolTable jinjaSymbolTable;
+    private final String flaskRawCode;  // 🔥 النص الخام لملف Flask
 
     // قائمة الكلمات المحجوزة في Python
     private static final Set<String> PYTHON_KEYWORDS = new HashSet<>(Arrays.asList(
@@ -2234,16 +2232,22 @@ public class SemanticAnalyzer {
             "app", "UPLOAD_FOLDER", "products", "not_a_list", "global_duplicate"
     ));
 
+    // عداد الأخطاء داخل الدوال
+    private int typeMismatchErrorCount = 0;
+
     public SemanticAnalyzer(SymbolTable table) {
         this.table = table;
         this.flaskSymbolBuilder = null;
         this.jinjaSymbolTable = null;
+        this.flaskRawCode = null;
     }
 
-    public SemanticAnalyzer(SymbolTable table, SymbolTableBuilder flaskBuilder, HtmlCssJinjaSymbolTable jinjaTable) {
+    public SemanticAnalyzer(SymbolTable table, SymbolTableBuilder flaskBuilder,
+                            HtmlCssJinjaSymbolTable jinjaTable, String rawCode) {
         this.table = table;
         this.flaskSymbolBuilder = flaskBuilder;
         this.jinjaSymbolTable = jinjaTable;
+        this.flaskRawCode = rawCode;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -2474,10 +2478,9 @@ public class SemanticAnalyzer {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  المجموعة 1: أخطاء Flask الأساسية (1-10)
+    //  الخطأ 1: Undefined error (رمز غير معرف)
     // ═══════════════════════════════════════════════════════════════════════
 
-    // 1. Undefined Error (رمز غير معرف)
     public void detectUndefinedErrors() {
         System.out.println("  ▶ [الخطأ 1] التحقق من الرموز غير المعرفة...");
         int errorCount = 0;
@@ -2522,7 +2525,10 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 2. Spelling Error (خطأ إملائي)
+    // ═══════════════════════════════════════════════════════════════════════
+    //  الخطأ 2: Spelling error (خطأ إملائي)
+    // ═══════════════════════════════════════════════════════════════════════
+
     public void detectSpellingErrors() {
         System.out.println("  ▶ [الخطأ 2] التحقق من الأخطاء الإملائية...");
         int errorCount = 0;
@@ -2531,7 +2537,7 @@ public class SemanticAnalyzer {
         for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
             correctPythonNames.add(sym.name);
         }
-        correctPythonNames.add("add_form"); // إضافة المتغيرات الخاصة
+        correctPythonNames.add("add_form");
 
         for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
             if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
@@ -2556,7 +2562,10 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 3. Scope Error (خطأ في النطاق)
+    // ═══════════════════════════════════════════════════════════════════════
+    //  الخطأ 3: Scope error (خطأ في النطاق)
+    // ═══════════════════════════════════════════════════════════════════════
+
     public void detectScopeErrors() {
         System.out.println("  ▶ [الخطأ 3] التحقق من أخطاء النطاق...");
         int errorCount = 0;
@@ -2569,13 +2578,11 @@ public class SemanticAnalyzer {
                 String varName = entry.getKey();
                 List<Integer> lines = entry.getValue();
 
-                // تجاهل الثوابت المضمنة
                 if (varName.equals("True") || varName.equals("False") ||
                         varName.equals("None") || varName.equals("__name__")) {
                     continue;
                 }
 
-                // تجاهل الدوال
                 boolean isFunction = false;
                 for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
                     if (sym instanceof FunctionSymbol && sym.name.equals(varName)) {
@@ -2585,7 +2592,6 @@ public class SemanticAnalyzer {
                 }
                 if (isFunction) continue;
 
-                // تجاهل المستوردات
                 boolean isImported = false;
                 for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
                     if (sym instanceof VariableSymbol) {
@@ -2599,7 +2605,6 @@ public class SemanticAnalyzer {
                 }
                 if (isImported) continue;
 
-                // إزالة الأسطر المكررة
                 Set<Integer> uniqueLines = new LinkedHashSet<>(lines);
                 if (uniqueLines.size() > 1) {
                     List<Integer> sortedLines = new ArrayList<>(uniqueLines);
@@ -2628,10 +2633,31 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 4. Type Mismatch (عدم تطابق الأنواع)
+    // ═══════════════════════════════════════════════════════════════════════
+    //  الخطأ 4: Type Mismatch (عدم تطابق الأنواع)
+    //  يكتشف:
+    //    1. عمليات بين أنواع غير متوافقة (مثل: 5 + "a") - باستخدام النص الخام
+    //    2. التكرار على متغير ليس list في Jinja
+    // ═══════════════════════════════════════════════════════════════════════
+
     public void detectTypeMismatch() {
         System.out.println("  ▶ [الخطأ 4] التحقق من عدم تطابق الأنواع...");
         int errorCount = 0;
+        typeMismatchErrorCount = 0;
+
+        // ─────────────────────────────────────────────────────────────────
+        //  الجزء الأول: فحص العمليات بين أنواع غير متوافقة في النص الخام
+        //  مثل: x = 5 + "a"  أو  y = "text" + 10
+        // ─────────────────────────────────────────────────────────────────
+
+        if (flaskRawCode != null) {
+            errorCount += detectTypeMismatchInRawCode(flaskRawCode);
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        //  الجزء الثاني: فحص التكرار على متغير ليس list في Jinja
+        //  مثل: {% for item in not_a_list %}
+        // ─────────────────────────────────────────────────────────────────
 
         for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
             if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
@@ -2650,15 +2676,68 @@ public class SemanticAnalyzer {
             }
         }
 
-        if (errorCount == 0) {
+        if (errorCount == 0 && typeMismatchErrorCount == 0) {
             System.out.println("  ✓ لا توجد أخطاء في تطابق الأنواع");
         } else {
-            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في تطابق الأنواع");
+            System.out.println("  ✓ تم اكتشاف " + (errorCount + typeMismatchErrorCount) + " خطأ في تطابق الأنواع");
         }
         System.out.println();
     }
 
-    // 5. Missing Flask Variable (متغير Flask مفقود)
+    /**
+     * 🔥 الدالة السحرية التي تكتشف 5 + "a" و "a" + 5 من النص الخام
+     * تستخدم Regex للبحث عن الأنماط: رقم + "نص" أو "نص" + رقم
+     */
+    private int detectTypeMismatchInRawCode(String code) {
+        int count = 0;
+
+        // تقسيم الكود إلى أسطر
+        String[] lines = code.split("\n");
+
+        // النمط الأول: رقم + "نص"  (مثل: 5 + "a")
+        Pattern pattern1 = Pattern.compile("(\\d+)\\s*\\+\\s*(\"[^\"]*\"|'[^']*')");
+        // النمط الثاني: "نص" + رقم  (مثل: "a" + 5)
+        Pattern pattern2 = Pattern.compile("(\"[^\"]*\"|'[^']*')\\s*\\+\\s*(\\d+)");
+
+        for (int lineNum = 1; lineNum <= lines.length; lineNum++) {
+            String line = lines[lineNum - 1];
+
+            // تجاهل الأسطر التي تحتوي على تعليقات
+            if (line.trim().startsWith("#")) {
+                continue;
+            }
+
+            Matcher matcher1 = pattern1.matcher(line);
+            Matcher matcher2 = pattern2.matcher(line);
+
+            while (matcher1.find()) {
+                String number = matcher1.group(1);
+                String string = matcher1.group(2);
+                table.addError(String.format(
+                        "[Type Mismatch - السطر %d] عملية غير متوافقة: %s + %s (لا يمكن جمع رقم مع نص)",
+                        lineNum, number, string
+                ));
+                count++;
+            }
+
+            while (matcher2.find()) {
+                String string = matcher2.group(1);
+                String number = matcher2.group(2);
+                table.addError(String.format(
+                        "[Type Mismatch - السطر %d] عملية غير متوافقة: %s + %s (لا يمكن جمع نص مع رقم)",
+                        lineNum, string, number
+                ));
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  الخطأ 5: Missing Flask Variable (متغير Flask مفقود)
+    // ═══════════════════════════════════════════════════════════════════════
+
     public void detectMissingFlaskVariables() {
         System.out.println("  ▶ [الخطأ 5] التحقق من متغيرات Flask المفقودة...");
         int errorCount = 0;
@@ -2674,7 +2753,6 @@ public class SemanticAnalyzer {
                 }
             }
             if (!found) {
-                // تحقق من الاستيرادات
                 boolean imported = false;
                 if (flaskSymbolBuilder != null) {
                     Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
@@ -2695,7 +2773,6 @@ public class SemanticAnalyzer {
             }
         }
 
-        // التحقق من متغير products
         boolean productsFound = false;
         for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
             if (sym.name.equals("products")) {
@@ -2716,15 +2793,16 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 6. Missing Return in Route (دالة route بلا return)
+    // ═══════════════════════════════════════════════════════════════════════
+    //  أخطاء إضافية
+    // ═══════════════════════════════════════════════════════════════════════
+
     public void detectMissingReturnInRoute() {
         System.out.println("  ▶ [الخطأ 6] التحقق من وجود return في دوال route...");
-        // قيد التطوير
         System.out.println("      ⚠ (قيد التطوير) سيتم اكتشاف دوال route بدون return");
         System.out.println("  ✓ قيد التطوير\n");
     }
 
-    // 8. Missing Template File (قالب غير موجود)
     public void detectMissingTemplateFile() {
         System.out.println("  ▶ [الخطأ 8] التحقق من وجود ملفات القوالب...");
         int errorCount = 0;
@@ -2757,7 +2835,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 10. Missing Secret Key (مفتاح سري مفقود)
     public void detectMissingSecretKey() {
         System.out.println("  ▶ [الخطأ 10] التحقق من وجود secret_key...");
         int errorCount = 0;
@@ -2799,11 +2876,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  المجموعة 3: أخطاء Jinja2 الأساسية (16-25)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // 16. Undefined Variable in Template (متغير غير معرف في القالب)
     public void detectUndefinedTemplateVariable() {
         System.out.println("  ▶ [الخطأ 16] التحقق من المتغيرات غير المعرفة في القالب...");
         int errorCount = 0;
@@ -2843,7 +2915,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 17. Undefined Filter (فلتر غير معرف)
     public void detectUndefinedFilter() {
         System.out.println("  ▶ [الخطأ 17] التحقق من الفلاتر غير المعرفة...");
         int errorCount = 0;
@@ -2878,7 +2949,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 19-20. Missing End Tags (علامات إغلاق مفقودة) - محسّن
     public void detectMissingEndTags() {
         System.out.println("  ▶ [الخطأ 19-20] التحقق من علامات الإغلاق المفقودة...");
         int errorCount = 0;
@@ -2933,18 +3003,12 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  المجموعة 4: أخطاء Runtime (26-35) - محسّنة
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // 26. Division by Zero (القسمة على صفر)
     public void detectDivisionByZero() {
         System.out.println("  ▶ [الخطأ 26] التحقق من القسمة على صفر...");
         int errorCount = 0;
 
         if (flaskSymbolBuilder != null) {
             Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
-
             for (ASTFlask.SymbolTable.Symbol symbol : globalScope.symbols.values()) {
                 if (symbol instanceof VariableSymbol) {
                     VariableSymbol var = (VariableSymbol) symbol;
@@ -2967,7 +3031,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 27. Index Out of Range (الوصول خارج حدود المصفوفة)
     public void detectIndexOutOfRange() {
         System.out.println("  ▶ [الخطأ 27] التحقق من الوصول خارج حدود المصفوفة...");
         int errorCount = 0;
@@ -2976,7 +3039,6 @@ public class SemanticAnalyzer {
             if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
                 String listName = sym.linkedTo;
                 List<String> knownKeys = table.getListKeys(listName);
-
                 if (knownKeys != null && sym.usedKeys != null) {
                     for (String usedKey : sym.usedKeys) {
                         if (isNumeric(usedKey)) {
@@ -3002,7 +3064,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 28. Key Error (مفتاح غير موجود في القاموس)
     public void detectKeyError() {
         System.out.println("  ▶ [الخطأ 28] التحقق من المفاتيح غير الموجودة...");
         int errorCount = 0;
@@ -3011,7 +3072,6 @@ public class SemanticAnalyzer {
             if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
                 String listName = sym.linkedTo;
                 List<String> knownKeys = table.getListKeys(listName);
-
                 if (knownKeys != null && sym.usedKeys != null) {
                     for (String usedKey : sym.usedKeys) {
                         if (!knownKeys.contains(usedKey) && !isNumeric(usedKey)) {
@@ -3034,22 +3094,18 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 29. None Type Access (الوصول إلى None) - محسّن لتجاهل الاستيرادات
     public void detectNoneTypeAccess() {
         System.out.println("  ▶ [الخطأ 29] التحقق من الوصول إلى قيمة None...");
         int errorCount = 0;
 
         if (flaskSymbolBuilder != null) {
             Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
-
             for (ASTFlask.SymbolTable.Symbol symbol : globalScope.symbols.values()) {
                 if (symbol instanceof VariableSymbol) {
                     VariableSymbol var = (VariableSymbol) symbol;
-                    // تجاهل الاستيرادات والمتغيرات المضمنة
                     if (var.type.equals("module") || var.type.equals("imported")) continue;
                     if (var.name.equals("True") || var.name.equals("False") || var.name.equals("None")) continue;
                     if (var.name.equals("__name__")) continue;
-
                     if (var.value == null) {
                         table.addWarning(String.format(
                                 "[None Type Warning - السطر %d] المتغير '%s' قيمته None. قد يسبب خطأ عند الوصول إلى خواصه",
@@ -3069,20 +3125,17 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 31. Value Error (خطأ في القيمة)
     public void detectValueError() {
         System.out.println("  ▶ [الخطأ 31] التحقق من أخطاء القيمة...");
         int errorCount = 0;
 
         if (flaskSymbolBuilder != null) {
             Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
-
             for (ASTFlask.SymbolTable.Symbol symbol : globalScope.symbols.values()) {
                 if (symbol instanceof VariableSymbol) {
                     VariableSymbol var = (VariableSymbol) symbol;
                     if (var.value instanceof String && var.value.toString().contains("int(")) {
                         String val = var.value.toString();
-                        // البحث عن int("abc") - تحويل نص غير رقمي
                         if (val.matches(".*int\\(\"[^0-9]+\"\\).*")) {
                             table.addError(String.format(
                                     "[ValueError - السطر %d] محاولة تحويل نص غير رقمي إلى int: %s",
@@ -3103,18 +3156,12 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  المجموعة 7: أخطاء متقدمة (46-50+) - محسّنة
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // 46. Unused Variable (متغير غير مستخدم) - محسّن
     public void detectUnusedVariable() {
         System.out.println("  ▶ [الخطأ 46] التحقق من المتغيرات غير المستخدمة...");
         int errorCount = 0;
 
         Set<String> usedVars = new HashSet<>();
 
-        // جمع المتغيرات المستخدمة من Jinja
         for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
             if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
                 usedVars.add(sym.linkedTo);
@@ -3124,25 +3171,18 @@ public class SemanticAnalyzer {
             }
         }
 
-        // جمع المتغيرات المستخدمة من الروابط
         for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
             if (sym.linkedTo != null) {
                 usedVars.add(sym.name);
             }
         }
 
-        // فحص جميع متغيرات Python
         for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
-            // تجاهل الدوال والاستيرادات
             if (sym.kind == SymbolTable.SymbolKind.ROUTE) continue;
             if (sym.type.equals("Module") || sym.type.equals("imported")) continue;
             if (sym.name.equals("True") || sym.name.equals("False") || sym.name.equals("None")) continue;
             if (sym.name.equals("__name__")) continue;
-
-            // تجاهل متغيرات Flask الأساسية
             if (sym.name.equals("app") || sym.name.equals("UPLOAD_FOLDER")) continue;
-
-            // تجاهل متغيرات الاختبار
             if (IGNORE_VARS.contains(sym.name)) continue;
 
             if (!usedVars.contains(sym.name) && !usedVars.contains(sym.name + "_loop")) {
@@ -3162,7 +3202,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 47. Unused Import (استيراد غير مستخدم) - محسّن
     public void detectUnusedImport() {
         System.out.println("  ▶ [الخطأ 47] التحقق من الاستيرادات غير المستخدمة...");
         int errorCount = 0;
@@ -3171,14 +3210,12 @@ public class SemanticAnalyzer {
             Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
             Set<String> usedImports = new HashSet<>();
 
-            // جمع الاستخدامات الفعلية
             for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
                 if (sym.kind == SymbolTable.SymbolKind.ROUTE || sym.linkedTo != null) {
                     usedImports.add(sym.name);
                 }
             }
 
-            // إضافة الاستخدامات من كود HTML/Jinja
             for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
                 if (sym.linkedTo != null) {
                     usedImports.add(sym.linkedTo);
@@ -3190,7 +3227,6 @@ public class SemanticAnalyzer {
                     VariableSymbol var = (VariableSymbol) symbol;
                     if ((var.type.equals("module") || var.type.equals("imported")) &&
                             !usedImports.contains(var.name)) {
-                        // تجاهل بعض الاستيرادات الأساسية
                         if (var.name.equals("os")) continue;
                         table.addWarning(String.format(
                                 "[Unused Import - السطر %d] الاستيراد '%s' غير مستخدم في الكود",
@@ -3210,7 +3246,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 48. Redeclared Function (إعادة تعريف دالة)
     public void detectRedeclaredFunction() {
         System.out.println("  ▶ [الخطأ 48] التحقق من إعادة تعريف الدوال...");
         int errorCount = 0;
@@ -3254,7 +3289,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    // 49. Shadowing Built-in (إخفاء دوال مدمجة)
     public void detectShadowingBuiltin() {
         System.out.println("  ▶ [الخطأ 49] التحقق من إخفاء الدوال المدمجة...");
         int errorCount = 0;
@@ -3267,7 +3301,6 @@ public class SemanticAnalyzer {
 
         if (flaskSymbolBuilder != null) {
             Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
-
             for (ASTFlask.SymbolTable.Symbol symbol : globalScope.symbols.values()) {
                 if (symbol instanceof VariableSymbol) {
                     VariableSymbol var = (VariableSymbol) symbol;
@@ -3346,29 +3379,25 @@ public class SemanticAnalyzer {
     public void detectAllErrors() {
         System.out.println("\n  🔍 بدء التحقق من جميع الأخطاء الدلالية...\n");
 
-        // المجموعة 1: أخطاء Flask الأساسية (التي تعمل)
+        // الأخطاء الخمسة الأساسية
         detectUndefinedErrors();           // 1
         detectSpellingErrors();            // 2
         detectScopeErrors();               // 3
-        detectTypeMismatch();              // 4
+        detectTypeMismatch();              // 4 (🔥 تشمل الآن 5 + "a")
         detectMissingFlaskVariables();     // 5
+
+        // أخطاء إضافية
         detectMissingReturnInRoute();      // 6 (قيد التطوير)
         detectMissingTemplateFile();       // 8
         detectMissingSecretKey();          // 10
-
-        // المجموعة 3: أخطاء Jinja2 (التي تعمل)
         detectUndefinedTemplateVariable(); // 16
         detectUndefinedFilter();           // 17
         detectMissingEndTags();            // 19-20
-
-        // المجموعة 4: أخطاء Runtime (التي تعمل)
         detectDivisionByZero();            // 26
         detectIndexOutOfRange();           // 27
         detectKeyError();                  // 28
         detectNoneTypeAccess();            // 29
         detectValueError();                // 31
-
-        // المجموعة 7: أخطاء متقدمة (التي تعمل)
         detectUnusedVariable();            // 46
         detectUnusedImport();              // 47
         detectRedeclaredFunction();        // 48
@@ -3427,10 +3456,14 @@ public class SemanticAnalyzer {
             }
         }
 
-        System.out.println("\n📊 ملخص الأخطاء:");
-        System.out.println("   ✅ 20+ خطأ دلالي يعمل بكفاءة");
-        System.out.println("   🟡 تحذيرات ذكية تم تصفيتها");
-        System.out.println("   ✅ تحليل كامل لـ Flask + Jinja2");
+        System.out.println("\n📊 ملخص الأخطاء الخمسة الأساسية:");
+        System.out.println("   1. Undefined Error: ✅");
+        System.out.println("   2. Spelling Error: ✅");
+        System.out.println("   3. Scope Error: ✅");
+        System.out.println("   4. Type Mismatch (نص + رقم / تكرار على غير list): ✅");
+        System.out.println("   5. Missing Flask Variable: ✅");
+        System.out.println("   ───────────────────────────────────────");
+        System.out.println("   ✅ جميع الأخطاء الخمسة الأساسية تعمل بكفاءة");
     }
 
     private static class ScopeOccurrence {

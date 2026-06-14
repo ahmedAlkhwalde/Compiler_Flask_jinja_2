@@ -156,7 +156,10 @@ public class Compiler {
         // ==================== 4. التحليل الدلالي وطباعة الجدول الموحّد ====================
         System.out.println("⚙️  [4/4] التحليل الدلالي وطباعة جدول الرموز الموحّد...");
 
-        SemanticAnalyzer analyzer = new SemanticAnalyzer(unifiedTable, flaskSymbolBuilder, jinjaSymbolTable);  // ✅ التصحيح
+        String flaskRawCode = Files.readString(Paths.get(flaskFile));  // اقرأ النص الخام
+
+        SemanticAnalyzer analyzer = new SemanticAnalyzer(unifiedTable, flaskSymbolBuilder, jinjaSymbolTable, flaskRawCode
+        );  // ✅ التصحيح
         analyzer.resolveAndValidate();
 
         // طباعة جدول الرموز الموحّد بشكل مفصل
