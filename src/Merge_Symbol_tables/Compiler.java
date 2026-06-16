@@ -545,12 +545,23 @@ public class Compiler {
         System.out.println("   ✅ تم نقل الرموز إلى الجدول الموحّد\n");
 
         // ==================== 4. التحليل الدلالي ====================
-        System.out.println("⚙️  [4/5] التحليل الدلالي...");
+//        System.out.println("⚙️  [4/5] التحليل الدلالي...");
+//
+//        String flaskRawCode = Files.readString(Paths.get(flaskFile));
+//
+//        SemanticAnalyzer analyzer = new SemanticAnalyzer(unifiedTable, flaskSymbolBuilder, jinjaSymbolTable, flaskRawCode);
+//        analyzer.resolveAndValidate();
 
-        String flaskRawCode = Files.readString(Paths.get(flaskFile));
+        /// //////////////////////////
+        System.out.println("⚙️  [4/4] التحليل الدلالي وطباعة جدول الرموز الموحّد...");
 
-        SemanticAnalyzer analyzer = new SemanticAnalyzer(unifiedTable, flaskSymbolBuilder, jinjaSymbolTable, flaskRawCode);
+        String flaskRawCode = Files.readString(Paths.get(flaskFile));  // اقرأ النص الخام
+        String jinjaRawCode = Files.readString(Paths.get(jinjaFile));  // أضف هذا السطر قبل
+        SemanticAnalyzer analyzer = new SemanticAnalyzer(unifiedTable, flaskSymbolBuilder, jinjaSymbolTable, flaskRawCode, jinjaRawCode);
         analyzer.resolveAndValidate();
+
+        /// /////////////////////////
+
 
         // طباعة جدول الرموز الموحّد بشكل مفصل
         unifiedTable.printTable();

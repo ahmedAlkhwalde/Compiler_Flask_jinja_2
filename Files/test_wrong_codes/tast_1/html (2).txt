@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8"/>
+    <title>المنتجات</title>
+</head>
+<body style="font-family: sans-serif; background: #f0f0f0; direction: rtl; text-align: center;">
+<div class="container" style="width: 90%; margin: auto; padding-top: 40px;">
+
+{# ============================================================ #}
+{#  المجموعة 3: أخطاء Jinja2 (7 أخطاء)                        #}
+{# ============================================================ #}
+
+{# 🔥 الخطأ رقم 1: Undefined Error - متغير غير معرف #}
+<p>اختبار undefined: {{ undefined_variable }}</p>
+
+{# 🔥 الخطأ رقم 2: Spelling Error - productss قريب من products #}
+{% for p in productss %}
+    <p>Spelling test: {{ p.name }}</p>
+{% endfor %}
+
+{# 🔥 الخطأ رقم 4 (نوع أول): Type Mismatch - التكرار على نص مش list #}
+{% for item in not_a_list %}
+    <p>Type mismatch: {{ item }}</p>
+{% endfor %}
+
+{# 🔥 الخطأ رقم 17: Undefined Filter - فلتر غير معرف #}
+<p>Filter test: {{ "hello" | unknownfilter }}</p>
+
+{# 🔥 الخطأ رقم 21: Invalid Filter Chain - سلسلة فلاتر غير صالحة #}
+<p>Filter chain: {{ "hello" | upper | invalidfilter }}</p>
+
+{# 🔥 الخطأ رقم 19: Missing End Tag - if بدون endif #}
+{% if add_form %}
+    <div class="form-box">
+        <h2>إضافة منتج جديد</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <label>اسم المنتج:</label>
+            <input type="text" name="name" required/>
+            <label>السعر:</label>
+            <input type="number" step="0.01" name="price" required/>
+            <label>اختر صورة:</label>
+            <input type="file" name="image" accept="image/*" required/>
+            <button type="submit">حفظ المنتج</button>
+        </form>
+        <a href="/">رجوع</a>
+    </div>
+
+{# 🔥 هنا مفقود {% endif %} - هذا يسبب خطأ Missing End Tag #}
+
+{# 🔥 الخطأ رقم 22: Missing Include Template - قالب غير موجود #}
+{% include 'missing_template.html' %}
+
+{# 🔥 الخطأ رقم 18: Undefined Macro - ماكرو غير معرف #}
+{{ macros.some_macro() }}
+
+{# ============================================================ #}
+{#  باقي القالب (شغال)                                         #}
+{# ============================================================ #}
+
+{% elif product %}
+    <div class="details" style="width: 320px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #aaa; text-align: right;">
+        <h2>{{ product.name }}</h2>
+        <img src="{{ product.image_url }}" style="width: 100%; border-radius: 10px;"/>
+        <p>السعر: {{ product.price }} $</p>
+        <form action="/delete/{{ product.id }}" method="POST">
+            <button class="delete-btn" style="background: red; margin-top: 7px; width: 100%; padding: 10px 20px; color: white; border: none; border-radius: 8px; cursor: pointer;">حذف المنتج</button>
+        </form>
+        <br/>
+        <a href="/" style="text-decoration: none; color: #333;">رجوع</a>
+    </div>
+
+{% else %}
+    <a href="/add"><button style="padding: 10px 20px; background: #00a1ff; color: white; border: none; border-radius: 8px; cursor: pointer;">إضافة منتج جديد</button></a>
+    <br/><br/>
+
+    {% for p in products %}
+        <div class="product-card" style="width: 220px; background: white; padding: 15px; border-radius: 10px; margin: 15px; display: inline-block; box-shadow: 0 0 7px #aaa;">
+            <img src="{{ p.image_url }}" style="width: 100%; border-radius: 10px;"/>
+            <h3>{{ p.name }}</h3>
+            <p>{{ p.price }} $</p>
+            <a href="/product/{{ p.id }}" style="text-decoration: none; color: #333;">عرض التفاصيل</a>
+            <form action="/delete/{{ p.id }}" method="POST">
+                <button class="delete-btn" style="background: red; margin-top: 7px; width: 100%; padding: 10px 20px; color: white; border: none; border-radius: 8px; cursor: pointer;">حذف</button>
+            </form>
+        </div>
+    {% endfor %}
+
+    {# 🔥 هذا الـ endif يقفل if add_form #}
+{% endif %}
+
+</div>
+</body>
+</html>

@@ -1,0 +1,136 @@
+from werkzeug.utils import secure_filename
+from flask import session  # أضف session للاستيراد
+import os
+
+# ============================================================
+#  المجموعة 1: أخطاء Flask الأساسية (5 أخطاء)
+# ============================================================
+
+app = Flask(__name__)
+UPLOAD_FOLDER = 'static/images'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# 🔥 الخطأ رقم 5: Missing Flask Variable - products محذوف
+# products = [
+#     {"id": 1, "name": "Laptop", "price": 750, "image": "laptop.jpg"},
+# ]
+
+# 🔥 الخطأ رقم 3: Scope Error - إعادة تعريف متغير
+global_duplicate = 1
+global_duplicate = 2
+
+# 🔥 الخطأ رقم 4 (نوع أول): Type Mismatch - متغير ليس list
+not_a_list = "هذا نص وليس قائمة"
+
+# 🔥 الخطأ رقم 4 (نوع ثاني): Type Mismatch - جمع رقم مع نص
+result = 10 + "text"
+
+# 🔥 الخطأ رقم 48: Redeclared Function - إعادة تعريف دالة
+def duplicate_function():
+    return "First version"
+
+def duplicate_function():
+    return "Second version"
+
+# ============================================================
+#  أخطاء إضافية في الدوال
+# ============================================================
+
+# 🔥 الخطأ رقم 6: Missing Return in Route - دالة route بلا return
+@app.route("/no-return")
+def no_return_route():
+    x = 1 + 2
+    # لا يوجد return هنا
+
+    @app.route("/login")
+    def login():
+        session["user"] = "test"  # استخدم session
+        return "Logged in"
+
+# 🔥 الخطأ رقم 7: Invalid URL Parameter Type (يتم اكتشافه لاحقاً)
+@app.route("/user/<int:user_id>")
+def get_user(user_id):
+    # لو تم تمرير نص بدل رقم راح يسبب خطأ
+    return f"User {user_id}"
+
+# ============================================================
+#  أخطاء Runtime (الأخطاء 26-35)
+# ============================================================
+
+# 🔥 الخطأ رقم 26: Division by Zero
+divide_by_zero = 100 // 0
+
+# 🔥 الخطأ رقم 27: Index Out of Range
+sample_list = [1, 2, 3]
+out_of_range = sample_list[10]
+
+# 🔥 الخطأ رقم 28: Key Error
+sample_dict = {"name": "test"}
+missing_key = sample_dict["missing"]
+
+# 🔥 الخطأ رقم 29: None Type Access
+none_variable = None
+none_access = none_variable.attribute
+
+# 🔥 الخطأ رقم 31: Value Error (تحويل نص غير رقمي)
+invalid_int = int("not a number")
+
+# ============================================================
+#  أخطاء متقدمة (الأخطاء 46-50)
+# ============================================================
+
+# 🔥 الخطأ رقم 46: Unused Variable (تحذير)
+unused_var = "هذا المتغير غير مستخدم"
+
+# 🔥 الخطأ رقم 47: Unused Import (تحذير) - os مستخدم لكن ممكن نضيف import غير مستخدم
+import json  # 🔥 هذا الاستيراد غير مستخدم
+
+# 🔥 الخطأ رقم 49: Shadowing Built-in (تحذير) - إخفاء دالة مدمجة
+len = 100  # len دالة مدمجة في Python
+
+# ============================================================
+#  دوال Flask العادية (الشغالة)
+# ============================================================
+
+def show_products():
+    # 🔥 هذا سيبحث عن products وهي غير معرفة (خطأ Missing)
+    for p in products:
+        p["image_url"] = url_for('static', filename=f"images/{p['image']}")
+    return render_template("products.html", products=products)
+
+@app.route("/product/<int:pid>")
+def product_details(pid):
+    # 🔥 هذا سيبحث عن products وهي غير معرفة
+    product = next((p for p in products if p["id"] == pid), None)
+    if product:
+        product["image_url"] = url_for('static', filename=f"images/{product['image']}")
+    return render_template("products.html", product=product)
+
+@app.route("/add", methods=["GET", "POST"])
+def add_product():
+    if request.method == "POST":
+        # 🔥 products غير معرفة
+        new_id = len(products) + 1
+        name = request.form["name"]
+        price = float(request.form["price"])
+        file = request.files["image"]
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        products.append({
+            "id": new_id,
+            "name": name,
+            "price": price,
+            "image": filename
+        })
+        return redirect("/")
+    return render_template("missing_file.html", add_form=True)
+
+@app.route("/delete/<int:pid>", methods=["POST"])
+def delete_product(pid):
+    global products
+    products = [p for p in products if p["id"] != pid]
+    return redirect("/")
+
+if __name__ == "__main__":
+    app.run(debug=True)

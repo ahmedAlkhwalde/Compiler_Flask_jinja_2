@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8"/>
+    <title>المنتجات</title>
+</head>
+<body style="font-family: sans-serif; background: #f0f0f0; direction: rtl; text-align: center;">
+<div class="container" style="width: 90%; margin: auto; padding-top: 40px;">
+
+{# ============================================================ #}
+{# 🔥🔥🔥 أخطاء Index Out of Range في Jinja2 🔥🔥🔥              #}
+{# ============================================================ #}
+
+{# 🔥 الخطأ 1: الوصول المباشر بالفهرس الثابت #}
+<p>العنصر الأول: {{ products[0].name }}</p>
+<p>العنصر العاشر: {{ products[10].name }}</p>  <!-- ❌ الفهرس 10 غير موجود -->
+
+{# 🔥 الخطأ 2: الوصول بالفهرس المتغير #}
+{% set idx = 5 %}
+<p>العنصر {{ idx }}: {{ products[idx].name }}</p>  <!-- ❌ idx قد يكون خارج النطاق -->
+
+{# 🔥 الخطأ 3: في حلقة مع وصول بالفهرس #}
+{% for i in range(10) %}
+    <p>العنصر {{ i }}: {{ products[i].name }}</p>  <!-- ❌ i سيصل إلى 9 ولكن القائمة طولها 3 -->
+{% endfor %}
+
+{# 🔥 الخطأ 4: قائمة فارغة #}
+{% set empty_list = [] %}
+<p>العنصر الأول: {{ empty_list[0] }}</p>  <!-- ❌ القائمة فارغة -->
+
+{# 🔥 الخطأ 5: الوصول إلى قائمة مشتقة فارغة #}
+{% set filtered = products | selectattr("price", "gt", 1000) | list %}
+<p>العنصر الأول: {{ filtered[0].name }}</p>  <!-- ❌ القائمة فارغة -->
+
+{# ============================================================ #}
+{# ❌ أخطاء Jinja2 أخرى (موجودة مسبقاً)                        #}
+{# ============================================================ #}
+
+{# ❌ Missing End Tags - for بدون endfor #}
+{% for item in not_a_list %}
+    <p>Test: {{ item }}</p>
+{# ❌ Missing endfor هنا #}
+
+{# ❌ Missing End Tags - if بدون endif #}
+{% if add_form %}
+    <div class="form-box">
+        <h2>إضافة منتج جديد</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <label>اسم المنتج:</label>
+            <input type="text" name="name" required/>
+            <label>السعر:</label>
+            <input type="number" step="0.01" name="price" required/>
+            <label>اختر صورة:</label>
+            <input type="file" name="image" accept="image/*" required/>
+            <button type="submit">حفظ المنتج</button>
+        </form>
+        <a href="/">رجوع</a>
+    </div>
+{# ❌ Missing endif هنا #}
+
+{# ❌ Spelling Error - productss بدل products #}
+{% for p in productss %}
+    <div class="product-card">
+        <img src="{{ p.image_url }}"/>
+        <h3>{{ p.name }}</h3>
+        <p>{{ p.price }} $</p>
+        <a href="/product/{{ p.id }}">عرض التفاصيل</a>
+        <form action="/delete/{{ p.id }}" method="POST">
+            <button class="delete-btn">حذف</button>
+        </form>
+    </div>
+{% endfor %}
+
+{# ❌ Undefined Variable #}
+<p>المستخدم: {{ unknown_user.name }}</p>
+
+{# ❌ Undefined Filter #}
+<p>{{ product.name | unknown_filter }}</p>
+
+</div>
+</body>
+</html>
