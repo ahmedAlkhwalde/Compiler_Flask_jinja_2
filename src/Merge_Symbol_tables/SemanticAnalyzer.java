@@ -2948,60 +2948,48 @@ public class SemanticAnalyzer {
         }
         System.out.println();
     }
+// ═══════════════════════════════════════════════════════════════════════
+//  الخطأ 19-20: Missing End Tags (علامات إغلاق مفقودة) - النسخة المحسّنة
+//  تستخدم المعلومات من VisitorJinjaSymbolTable مباشرة
+// ═══════════════════════════════════════════════════════════════════════
+public void detectMissingEndTags() {
+    System.out.println("  ▶ [الخطأ 19-20] التحقق من علامات الإغلاق المفقودة...");
+    int errorCount = 0;
 
-    public void detectMissingEndTags() {
-        System.out.println("  ▶ [الخطأ 19-20] التحقق من علامات الإغلاق المفقودة...");
-        int errorCount = 0;
+    if (jinjaSymbolTable != null) {
+        // 🔥 استخدام العدادات مباشرة من جدول الرموز
+        int forCount = jinjaSymbolTable.getForBlockCount();
+        int endforCount = jinjaSymbolTable.getEndforCount();
+        int ifCount = jinjaSymbolTable.getIfBlockCount();
+        int endifCount = jinjaSymbolTable.getEndifCount();
 
-        if (jinjaSymbolTable != null) {
-            int forCount = 0, endforCount = 0;
-            int ifCount = 0, endifCount = 0;
-            int blockCount = 0, endblockCount = 0;
+        System.out.println("      📊 for blocks: " + forCount + " | endfor: " + endforCount);
+        System.out.println("      📊 if blocks: " + ifCount + " | endif: " + endifCount);
 
-            for (Symbol symbol : jinjaSymbolTable.findSymbolsByType("JINJA")) {
-                if (symbol instanceof JinjaBlockSymbol) {
-                    JinjaBlockSymbol block = (JinjaBlockSymbol) symbol;
-                    String content = block.getContent();
-                    if (content != null) {
-                        if (content.startsWith("for ")) forCount++;
-                        if (content.trim().equals("endfor")) endforCount++;
-                        if (content.startsWith("if ")) ifCount++;
-                        if (content.trim().equals("endif")) endifCount++;
-                        if (content.startsWith("block ")) blockCount++;
-                        if (content.trim().equals("endblock")) endblockCount++;
-                    }
-                }
-            }
-
-            if (forCount != endforCount) {
-                table.addError(String.format(
-                        "[Missing End Tag] عدد حلقات for (%d) لا يتطابق مع عدد endfor (%d). تأكد من إغلاق جميع الحلقات",
-                        forCount, endforCount
-                ));
-                errorCount++;
-            }
-            if (ifCount != endifCount) {
-                table.addError(String.format(
-                        "[Missing End Tag] عدد جمل if (%d) لا يتطابق مع عدد endif (%d). تأكد من إغلاق جميع جمل الشرط",
-                        ifCount, endifCount
-                ));
-                errorCount++;
-            }
-            if (blockCount != endblockCount) {
-                table.addWarning(String.format(
-                        "[Missing End Tag] عدد كتل block (%d) لا يتطابق مع عدد endblock (%d)",
-                        blockCount, endblockCount
-                ));
-            }
+        if (forCount != endforCount) {
+            table.addError(String.format(
+                    "[Missing End Tag] عدد حلقات for (%d) لا يتطابق مع عدد endfor (%d)",
+                    forCount, endforCount
+            ));
+            errorCount++;
         }
 
-        if (errorCount == 0) {
-            System.out.println("  ✓ جميع علامات الإغلاق موجودة");
-        } else {
-            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في علامات الإغلاق");
+        if (ifCount != endifCount) {
+            table.addError(String.format(
+                    "[Missing End Tag] عدد جمل if (%d) لا يتطابق مع عدد endif (%d)",
+                    ifCount, endifCount
+            ));
+            errorCount++;
         }
-        System.out.println();
     }
+
+    if (errorCount == 0) {
+        System.out.println("  ✓ جميع علامات الإغلاق موجودة");
+    } else {
+        System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في علامات الإغلاق");
+    }
+    System.out.println();
+}
 
     public void detectDivisionByZero() {
         System.out.println("  ▶ [الخطأ 26] التحقق من القسمة على صفر...");
