@@ -2,10 +2,10 @@ from flask import Flask, render_template, request, redirect, url_for
 from werkzeug.utils import secure_filename
 import os
 app = Flask(__name__)
-UPLOAD_FOLDER = 'static/images'
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-products = [{'id': 1, 'name': 'Laptop', 'price': 750, 'image': 'laptop.jpg'}, {'id': 2, 'name': 'Headphones', 'price': 120, 'image': 'headphones.jpg'}, {'id': 3, 'name': 'Camera', 'price': 500, 'image': 'camera.jpg'}]
+products = [{'id': 3, 'name': 'aa', 'price': 12.0, 'image': 'images.jfif', 'image_url': '/static/images/images.jfif'}, {'id': 5, 'name': 'شس', 'price': 11.0, 'image': 'images_1.jfif', 'image_url': '/static/images/images_1.jfif'}]
 @app.route('/')
 def show_products():
     for p in products:
@@ -23,7 +23,7 @@ def product_details(pid):
 def add_product():
     global products
     if request.method == 'POST':
-        new_id = (len(products) + 1)
+        new_id = (max([p['id'] for p in products]) + 1) if products else 1
         form_keys = list(request.form.keys())
         if 'price' in form_keys:
             form_keys.remove('price')
@@ -47,6 +47,24 @@ def delete_product(pid):
     global products
     products = [p for p in products if p['id'] != pid]
     return redirect('/')
+
+@app.after_request
+def __sync_products_state(response):
+    try:
+        __new_state = 'products = ' + str(products)
+        __changed = True
+        try:
+            with open('Files/.products_state.txt', 'r', encoding='utf-8') as __rf:
+                if __rf.read() == __new_state:
+                    __changed = False
+        except Exception:
+            pass
+        if __changed:
+            with open('Files/.products_state.txt', 'w', encoding='utf-8') as __sync_f:
+                __sync_f.write(__new_state)
+    except Exception:
+        pass
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)

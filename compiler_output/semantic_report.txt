@@ -1,0 +1,70 @@
+═══════════════════════════════════════════
+        تقرير التحليل الدلالي
+═══════════════════════════════════════════
+
+رموز Python:
+  • out_of_range [VARIABLE]
+  • data [VARIABLE]
+  • value_error [VARIABLE]
+  • os.makedirs(UPLOAD_FOLDER [VARIABLE]
+  • empty_list [VARIABLE]
+  • sample_product [VARIABLE]
+  • sample_list [VARIABLE]
+  • not_a_list [VARIABLE]
+  • UPLOAD_FOLDER [VARIABLE]
+  • products [VARIABLE]
+  • app.config'UPLOAD_FOLDER' [VARIABLE]
+  • index_error_2 [VARIABLE]
+  • division_zero [VARIABLE]
+  • index_error_1 [VARIABLE]
+  • bad_index [VARIABLE]
+  • filtered [VARIABLE]
+  • app [VARIABLE]
+  • filtered_error [VARIABLE]
+  • unused_var [VARIABLE]
+  • global_duplicate [VARIABLE]
+  • x [VARIABLE]
+  • empty_error [VARIABLE]
+  • show_products [ROUTE]
+  • show [VARIABLE]
+  • get_item [VARIABLE]
+  • len [VARIABLE]
+  • add_product [ROUTE]
+  • get_item_by_index [VARIABLE]
+  • product_details [ROUTE]
+  • delete_product [ROUTE]
+
+رموز Jinja2:
+  • products.html [TEMPLATE]
+  • i [LOOP_VAR]
+  • p [LOOP_VAR]
+  • item [LOOP_VAR]
+
+الأخطاء الدلالية: 25
+  ❌ [ربط] حلقة for في Jinja تكرر على 'range ( 1 0 )' غير معرّف في Python
+  ❌ [ربط] حلقة for في Jinja تكرر على 'productss' غير معرّف في Python
+  ❌ [Undefined Error - السطر 23] المتغير 'range ( 1 0 )' المستخدم في حلقة for غير معرف في كود Python
+  ❌ [Undefined Error - السطر 62] المتغير 'productss' المستخدم في حلقة for غير معرف في كود Python
+  ❌ [Spelling Error - السطر 23] المتغير 'range ( 1 0 )' غير موجود. تأكد من كتابته
+  ❌ [Spelling Error - السطر 62] المتغير 'productss' غير موجود. هل تقصد 'products'؟
+  ❌ [Scope Error - السطر 135] المتغير 'products' أعيد تعريفه في نفس النطاق (تم تعريفه أول مرة في السطر 14). هذا غير مسموح به في Python.
+  ❌ [Type Mismatch - السطر 66] عملية غير متوافقة: 5 + "a" (لا يمكن جمع رقم مع نص)
+  ❌ [Type Mismatch - السطر 40] المتغير 'not_a_list' من نوع 'any' لا يمكن التكرار عليه في حلقة for (يجب أن يكون list)
+  ❌ [Undefined Template Variable - السطر 20] المتغير '{{ idx }}' غير معرف في كود Python
+  ❌ [Undefined Template Variable - السطر 24] المتغير '{{ i }}' غير معرف في كود Python
+  ❌ [Undefined Filter - السطر 32] الفلتر 'selectattr' غير معرف في Jinja2
+  ❌ [Undefined Filter - السطر 78] الفلتر 'unknown_filter' غير معرف في Jinja2
+  ❌ [Missing End Tag] عدد حلقات for (0) لا يتطابق مع عدد endfor (1)
+  ❌ [Missing End Tag] (من النص الخام) عدد جمل if (1) لا يتطابق مع عدد endif (0)
+  ❌ [Division by Zero - السطر 70] عملية قسمة على صفر: division_zero = 10 / 0
+  ❌ [Index Out of Range - السطر 26] الوصول إلى الفهرس 10 في القائمة 'sample_list' ولكن طول القائمة هو 5
+  ❌ [Index Out of Range - السطر 29] الوصول إلى الفهرس -10 في القائمة 'sample_list' ولكن طول القائمة هو 5
+  ❌ [Index Out of Range - السطر 16] الوصول إلى الفهرس 10 في القائمة 'products' ولكن طول القائمة هو 3 (في قالب Jinja2)
+  ❌ [Index Out of Range - السطر 20] الوصول إلى الفهرس 'idx' في القائمة 'products' قد يكون خارج النطاق (طول القائمة هو 3)
+  ❌ [Index Out of Range - السطر 24] الوصول إلى الفهرس 'i' في القائمة 'products' قد يكون خارج النطاق (طول القائمة هو 3)
+  ❌ [Index Out of Range - السطر 29] الوصول إلى الفهرس 0 في القائمة 'empty_list' ولكن طول القائمة هو 0 (في قالب Jinja2)
+  ❌ [Index Out of Range - السطر 33] الوصول إلى الفهرس 0 في القائمة 'filtered' ولكن طول القائمة هو 0 (في قالب Jinja2)
+  ❌ [Key Error - السطر 128] المفتاح 'price' غير موجود في القاموس 'sample_product'
+  ❌ [ValueError - السطر 73] محاولة تحويل نص غير رقمي إلى int: int("abc")
+
+النتيجة: فشل

@@ -8,10 +8,6 @@
 //import java.io.*;
 //import java.util.List;
 //
-///**
-// * مولد كود Flask من AST
-// * يقوم بتحويل الشجرة المجردة إلى كود Python صالح للتشغيل
-// */
 //public class FlaskCodeGenerator {
 //
 //    private final StringBuilder code = new StringBuilder();
@@ -20,12 +16,11 @@
 //    public FlaskCodeGenerator() {}
 //
 //    private void append(String text) {
-//        code.append("    ".repeat(indentLevel)).append(text);
+//        code.append(text);
 //    }
 //
 //    private void appendLine(String line) {
-//        append(line);
-//        code.append("\n");
+//        code.append("    ".repeat(indentLevel)).append(line).append("\n");
 //    }
 //
 //    private void indent() { indentLevel++; }
@@ -40,14 +35,11 @@
 //    private void generateStatment(Statment stmt) {
 //        if (stmt == null) return;
 //
-//        // استيرادات
 //        if (stmt instanceof ImportFrom) {
 //            generateImportFrom((ImportFrom) stmt);
 //        } else if (stmt instanceof ImportName) {
 //            generateImportName((ImportName) stmt);
-//        }
-//        // التعابير والعمليات
-//        else if (stmt instanceof Testlist_Start_ExpressionEqual) {
+//        } else if (stmt instanceof Testlist_Start_ExpressionEqual) {
 //            generateAssignment((Testlist_Start_ExpressionEqual) stmt);
 //        } else if (stmt instanceof AugassignEqual) {
 //            generateAugAssign((AugassignEqual) stmt);
@@ -61,9 +53,7 @@
 //            generatePass((PassStatment) stmt);
 //        } else if (stmt instanceof Testlist_star_expr) {
 //            generateExpressionStatement((Testlist_star_expr) stmt);
-//        }
-//        // الدوال
-//        else if (stmt instanceof FounctionStatment) {
+//        } else if (stmt instanceof FounctionStatment) {
 //            generateFunction((FounctionStatment) stmt);
 //        } else if (stmt instanceof DecoratedStatmentOfFunction) {
 //            generateDecoratedFunction((DecoratedStatmentOfFunction) stmt);
@@ -73,30 +63,20 @@
 //            appendLine("break");
 //        } else if (stmt instanceof FlowCountinue) {
 //            appendLine("continue");
-//        }
-//        // الجمل الشرطية والحلقات
-//        else if (stmt instanceof IfStatment) {
+//        } else if (stmt instanceof IfStatment) {
 //            generateIfStatement((IfStatment) stmt);
 //        } else if (stmt instanceof ForStatment) {
 //            generateForStatement((ForStatment) stmt);
 //        } else if (stmt instanceof WhileStatment) {
 //            generateWhileStatement((WhileStatment) stmt);
-//        }
-//        // try-except-with
-//        else if (stmt instanceof TryStatment) {
+//        } else if (stmt instanceof TryStatment) {
 //            generateTryStatement((TryStatment) stmt);
 //        } else if (stmt instanceof WithStatment) {
 //            generateWithStatement((WithStatment) stmt);
-//        }
-//        // الكلاس
-//        else if (stmt instanceof ClassStatment) {
+//        } else if (stmt instanceof ClassStatment) {
 //            generateClassStatement((ClassStatment) stmt);
 //        }
 //    }
-//
-//    // ═══════════════════════════════════════════════════════════════════
-//    //  توليد الاستيرادات
-//    // ═══════════════════════════════════════════════════════════════════
 //
 //    private void generateImportFrom(ImportFrom stmt) {
 //        StringBuilder items = new StringBuilder();
@@ -121,10 +101,6 @@
 //            }
 //        }
 //    }
-//
-//    // ═══════════════════════════════════════════════════════════════════
-//    //  توليد المتغيرات والتعابير
-//    // ═══════════════════════════════════════════════════════════════════
 //
 //    private void generateAssignment(Testlist_Start_ExpressionEqual stmt) {
 //        String target = expressionToString(stmt.target);
@@ -175,12 +151,7 @@
 //        }
 //    }
 //
-//    // ═══════════════════════════════════════════════════════════════════
-//    //  توليد الدوال
-//    // ═══════════════════════════════════════════════════════════════════
-//
 //    private void generateFunction(FounctionStatment stmt) {
-//        // معاملات الدالة
 //        StringBuilder params = new StringBuilder();
 //        if (stmt.params != null) {
 //            for (int i = 0; i < stmt.params.size(); i++) {
@@ -188,12 +159,11 @@
 //                ParametarToFunction param = stmt.params.get(i);
 //                params.append(param.name);
 //                if (param.defaultValue != null) {
-//                    params.append(" = ").append(expressionToString(param.defaultValue));
+//                    params.append("=").append(expressionToString(param.defaultValue));
 //                }
 //            }
 //        }
 //
-//        // توقيع الدالة
 //        if (stmt.returnType != null) {
 //            appendLine(String.format("def %s(%s) -> %s:", stmt.name, params, expressionToString(stmt.returnType)));
 //        } else {
@@ -201,11 +171,17 @@
 //        }
 //        indent();
 //
-//        // جسم الدالة
-//        if (stmt.body != null) {
+//        // حماية تلقائية لـ Scope بايثون: إضافة global للمصفوفات العامة في دوال الحذف أو الإضافة
+//        if (stmt.name.equalsIgnoreCase("delete_product") || stmt.name.equalsIgnoreCase("add_product")) {
+//            appendLine("global products");
+//        }
+//
+//        if (stmt.body != null && !stmt.body.isEmpty()) {
 //            for (Statment bodyStmt : stmt.body) {
 //                generateStatment(bodyStmt);
 //            }
+//        } else {
+//            appendLine("pass");
 //        }
 //
 //        dedent();
@@ -213,7 +189,6 @@
 //    }
 //
 //    private void generateDecoratedFunction(DecoratedStatmentOfFunction stmt) {
-//        // توليد الديكوراتورات
 //        if (stmt.decorators != null) {
 //            for (DecoratorOfFunction decorator : stmt.decorators) {
 //                String decoratorName = expressionToString(decorator.name);
@@ -229,7 +204,6 @@
 //                }
 //            }
 //        }
-//        // توليد الدالة نفسها
 //        if (stmt.statement instanceof FounctionStatment) {
 //            generateFunction((FounctionStatment) stmt.statement);
 //        }
@@ -248,35 +222,33 @@
 //        }
 //    }
 //
-//    // ═══════════════════════════════════════════════════════════════════
-//    //  توليد الجمل الشرطية والحلقات
-//    // ═══════════════════════════════════════════════════════════════════
-//
 //    private void generateIfStatement(IfStatment stmt) {
 //        appendLine(String.format("if %s:", expressionToString(stmt.condition)));
 //        indent();
-//        if (stmt.body != null) {
+//        if (stmt.body != null && !stmt.body.isEmpty()) {
 //            for (Statment bodyStmt : stmt.body) {
 //                generateStatment(bodyStmt);
 //            }
+//        } else {
+//            appendLine("pass");
 //        }
 //        dedent();
 //
-//        // جمل elif
 //        if (stmt.elifs != null) {
 //            for (ElifStatment elif : stmt.elifs) {
 //                appendLine(String.format("elif %s:", expressionToString(elif.condition)));
 //                indent();
-//                if (elif.body != null) {
+//                if (elif.body != null && !elif.body.isEmpty()) {
 //                    for (Statment bodyStmt : elif.body) {
 //                        generateStatment(bodyStmt);
 //                    }
+//                } else {
+//                    appendLine("pass");
 //                }
 //                dedent();
 //            }
 //        }
 //
-//        // جمل else
 //        if (stmt.elseBody != null && !stmt.elseBody.isEmpty()) {
 //            appendLine("else:");
 //            indent();
@@ -292,10 +264,12 @@
 //        String iterable = expressionToString(stmt.iterable);
 //        appendLine(String.format("for %s in %s:", target, iterable));
 //        indent();
-//        if (stmt.body != null) {
+//        if (stmt.body != null && !stmt.body.isEmpty()) {
 //            for (Statment bodyStmt : stmt.body) {
 //                generateStatment(bodyStmt);
 //            }
+//        } else {
+//            appendLine("pass");
 //        }
 //        dedent();
 //
@@ -312,21 +286,14 @@
 //    private void generateWhileStatement(WhileStatment stmt) {
 //        appendLine(String.format("while %s:", expressionToString(stmt.condition)));
 //        indent();
-//        if (stmt.body != null) {
+//        if (stmt.body != null && !stmt.body.isEmpty()) {
 //            for (Statment bodyStmt : stmt.body) {
 //                generateStatment(bodyStmt);
 //            }
+//        } else {
+//            appendLine("pass");
 //        }
 //        dedent();
-//
-//        if (stmt.elseBody != null && !stmt.elseBody.isEmpty()) {
-//            appendLine("else:");
-//            indent();
-//            for (Statment bodyStmt : stmt.elseBody) {
-//                generateStatment(bodyStmt);
-//            }
-//            dedent();
-//        }
 //    }
 //
 //    private void generateTryStatement(TryStatment stmt) {
@@ -359,24 +326,6 @@
 //                }
 //                dedent();
 //            }
-//        }
-//
-//        if (stmt.elseBody != null && !stmt.elseBody.isEmpty()) {
-//            appendLine("else:");
-//            indent();
-//            for (Statment bodyStmt : stmt.elseBody) {
-//                generateStatment(bodyStmt);
-//            }
-//            dedent();
-//        }
-//
-//        if (stmt.finallyBody != null && !stmt.finallyBody.isEmpty()) {
-//            appendLine("finally:");
-//            indent();
-//            for (Statment bodyStmt : stmt.finallyBody) {
-//                generateStatment(bodyStmt);
-//            }
-//            dedent();
 //        }
 //    }
 //
@@ -420,17 +369,200 @@
 //            }
 //        }
 //        dedent();
-//        code.append("\n");
 //    }
 //
-//    // ═══════════════════════════════════════════════════════════════════
-//    //  دوال مساعدة لتحويل التعبيرات إلى نص
-//    // ═══════════════════════════════════════════════════════════════════
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  🔥🔥🔥 توليد Comprehension (list, dict, generator) 🔥🔥🔥
+//    // ═══════════════════════════════════════════════════════════════════════
+//
+//    private String generateComprehension(ComplexListOfFor comp) {
+//        if (comp == null) return "[]";
+//
+//        // توليد الجسم (body) - العنصر الذي سيتم إرجاعه
+//        String body = expressionToString(comp.body);
+//
+//        // توليد حلقات for والشروط
+//        StringBuilder clauses = new StringBuilder();
+//        for (CoplexForExpression forClause : comp.forClauses) {
+//            if (clauses.length() > 0) clauses.append(" ");
+//
+//            String target = expressionToString(forClause.target);
+//            String iterable = expressionToString(forClause.iterable);
+//            clauses.append("for ").append(target).append(" in ").append(iterable);
+//
+//            // إضافة الشروط (if)
+//            if (forClause.conditions != null && !forClause.conditions.isEmpty()) {
+//                for (ExpressionAtom condition : forClause.conditions) {
+//                    clauses.append(" if ").append(expressionToString(condition));
+//                }
+//            }
+//        }
+//
+//        // تحديد نوع الـ comprehension
+//        if (comp.type == TypeOfFor_Complex.LIST) {
+//            // List comprehension: [expr for ...]
+//            return "[" + body + " " + clauses + "]";
+//        } else if (comp.type == TypeOfFor_Complex.GENERATOR) {
+//            // Generator expression: (expr for ...)
+//            return "(" + body + " " + clauses + ")";
+//        } else if (comp.type == TypeOfFor_Complex.DICT) {
+//            // Dict comprehension: {key: value for ...}
+//            String key = comp.key != null ? expressionToString(comp.key) : body;
+//            return "{" + key + ": " + body + " " + clauses + "}";
+//        }
+//
+//        return "[" + body + " " + clauses + "]";
+//    }
+//
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  تنظيف النصوص من الاقتباسات الزائدة
+//    // ═══════════════════════════════════════════════════════════════════════
+//
+//    private String cleanStringValue(String value) {
+//        if (value == null) return "";
+//        if (value.startsWith("\"") && value.endsWith("\"")) {
+//            return value.substring(1, value.length() - 1);
+//        }
+//        if (value.startsWith("'") && value.endsWith("'")) {
+//            return value.substring(1, value.length() - 1);
+//        }
+//        return value;
+//    }
+//
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  دالة تحويل التعبير إلى نص (المعدلة بالكامل)
+//    // ═══════════════════════════════════════════════════════════════════════
+//
+//
+//
+////
+////    private String expressionToString(ExpressionAtom expr) {
+////        if (expr == null) return "None";
+////
+////        if (expr instanceof NameExpression) {
+////            return ((NameExpression) expr).name;
+////        }
+////        if (expr instanceof NumberExpression) {
+////            return ((NumberExpression) expr).value;
+////        }
+////        if (expr instanceof StringExpression) {
+////            String value = ((StringExpression) expr).value;
+////            value = cleanStringValue(value);
+////            return "'" + value + "'";
+////        }
+////        if (expr instanceof BooleanExpression) {
+////            return ((BooleanExpression) expr).value ? "True" : "False";
+////        }
+////        if (expr instanceof NoneExpression) {
+////            return "None";
+////        }
+////        if (expr instanceof FStringExpression) {
+////            return ((FStringExpression) expr).value;
+////        }
+////        // 🔥 أهم إضافة: معالجة ComplexListOfFor (comprehension)
+////        if (expr instanceof ComplexListOfFor) {
+////            return generateComprehension((ComplexListOfFor) expr);
+////        }
+////        if (expr instanceof CallExprssion) {
+////            CallExprssion call = (CallExprssion) expr;
+////            StringBuilder args = new StringBuilder();
+////            if (call.args != null) {
+////                for (int i = 0; i < call.args.size(); i++) {
+////                    if (i > 0) args.append(", ");
+////                    args.append(expressionToString(call.args.get(i)));
+////                }
+////            }
+////            return String.format("%s(%s)", expressionToString(call.function), args);
+////        }
+////        if (expr instanceof AttributeOfVariable) {
+////            AttributeOfVariable attr = (AttributeOfVariable) expr;
+////            return String.format("%s.%s", expressionToString(attr.object), attr.property);
+////        }
+////        if (expr instanceof SubscriptOfAree) {
+////            SubscriptOfAree sub = (SubscriptOfAree) expr;
+////            String sliceStr = sliceToString(sub.slice);
+////            if (sliceStr.isEmpty()) {
+////                return String.format("%s", expressionToString(sub.value));
+////            }
+////            return String.format("%s[%s]", expressionToString(sub.value), sliceStr);
+////        }
+////        if (expr instanceof TwoOperationExprssion) {
+////            TwoOperationExprssion bin = (TwoOperationExprssion) expr;
+////            return String.format("(%s %s %s)", expressionToString(bin.left), bin.op, expressionToString(bin.right));
+////        }
+////        if (expr instanceof OneOperationExprssion) {
+////            OneOperationExprssion un = (OneOperationExprssion) expr;
+////            return String.format("%s%s", un.op, expressionToString(un.expr));
+////        }
+////        if (expr instanceof CompareExprssion) {
+////            CompareExprssion comp = (CompareExprssion) expr;
+////            StringBuilder result = new StringBuilder(expressionToString(comp.left));
+////            for (int i = 0; i < comp.ops.size(); i++) {
+////                result.append(" ").append(comp.ops.get(i)).append(" ");
+////                result.append(expressionToString(comp.rights.get(i)));
+////            }
+////            return result.toString();
+////        }
+////        if (expr instanceof ListExprssion) {
+////            ListExprssion list = (ListExprssion) expr;
+////            StringBuilder items = new StringBuilder();
+////            if (list.items != null) {
+////                for (int i = 0; i < list.items.size(); i++) {
+////                    if (i > 0) items.append(", ");
+////                    items.append(expressionToString(list.items.get(i)));
+////                }
+////            }
+////            return "[" + items + "]";
+////        }
+////        if (expr instanceof TupleExprssion) {
+////            TupleExprssion tuple = (TupleExprssion) expr;
+////            StringBuilder items = new StringBuilder();
+////            if (tuple.items != null) {
+////                for (int i = 0; i < tuple.items.size(); i++) {
+////                    if (i > 0) items.append(", ");
+////                    items.append(expressionToString(tuple.items.get(i)));
+////                }
+////            }
+////            if (tuple.items != null && tuple.items.size() == 1) {
+////                return "(" + items + ",)";
+////            }
+////            return "(" + items + ")";
+////        }
+////        if (expr instanceof DictionaryExprssion) {
+////            DictionaryExprssion dict = (DictionaryExprssion) expr;
+////            StringBuilder items = new StringBuilder();
+////            if (dict.keys != null && dict.values != null) {
+////                for (int i = 0; i < dict.keys.size(); i++) {
+////                    if (i > 0) items.append(", ");
+////                    items.append(expressionToString(dict.keys.get(i)));
+////                    items.append(": ");
+////                    items.append(expressionToString(dict.values.get(i)));
+////                }
+////            }
+////            return "{" + items + "}";
+////        }
+////        if (expr instanceof NameArgumentExpr) {
+////            NameArgumentExpr named = (NameArgumentExpr) expr;
+////            return String.format("%s=%s", named.name, expressionToString(named.value));
+////        }
+////
+////        return expr.toString();
+////    }
+////
+////
+//
+//
+//
+//
+//
+//
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  دالة تحويل التعبير إلى نص (المعدلة بالكامل لحل مشكلة الـ Tuple والـ Generator)
+//    // ═══════════════════════════════════════════════════════════════════════
 //
 //    private String expressionToString(ExpressionAtom expr) {
 //        if (expr == null) return "None";
 //
-//        // التعابير الذرية
 //        if (expr instanceof NameExpression) {
 //            return ((NameExpression) expr).name;
 //        }
@@ -438,7 +570,9 @@
 //            return ((NumberExpression) expr).value;
 //        }
 //        if (expr instanceof StringExpression) {
-//            return ((StringExpression) expr).value;
+//            String value = ((StringExpression) expr).value;
+//            value = cleanStringValue(value);
+//            return "'" + value + "'";
 //        }
 //        if (expr instanceof BooleanExpression) {
 //            return ((BooleanExpression) expr).value ? "True" : "False";
@@ -449,8 +583,10 @@
 //        if (expr instanceof FStringExpression) {
 //            return ((FStringExpression) expr).value;
 //        }
-//
-//        // استدعاء الدوال
+//        // 🔥 أهم إضافة: معالجة ComplexListOfFor (comprehension)
+//        if (expr instanceof ComplexListOfFor) {
+//            return generateComprehension((ComplexListOfFor) expr);
+//        }
 //        if (expr instanceof CallExprssion) {
 //            CallExprssion call = (CallExprssion) expr;
 //            StringBuilder args = new StringBuilder();
@@ -462,33 +598,26 @@
 //            }
 //            return String.format("%s(%s)", expressionToString(call.function), args);
 //        }
-//
-//        // الوصول إلى الخصائص
 //        if (expr instanceof AttributeOfVariable) {
 //            AttributeOfVariable attr = (AttributeOfVariable) expr;
 //            return String.format("%s.%s", expressionToString(attr.object), attr.property);
 //        }
-//
-//        // الوصول إلى المصفوفات
 //        if (expr instanceof SubscriptOfAree) {
 //            SubscriptOfAree sub = (SubscriptOfAree) expr;
-//            return String.format("%s[%s]", expressionToString(sub.value), sliceToString(sub.slice));
+//            String sliceStr = sliceToString(sub.slice);
+//            if (sliceStr.isEmpty()) {
+//                return String.format("%s", expressionToString(sub.value));
+//            }
+//            return String.format("%s[%s]", expressionToString(sub.value), sliceStr);
 //        }
-//
-//        // العمليات الثنائية
 //        if (expr instanceof TwoOperationExprssion) {
 //            TwoOperationExprssion bin = (TwoOperationExprssion) expr;
-//            return String.format("(%s %s %s)",
-//                    expressionToString(bin.left), bin.op, expressionToString(bin.right));
+//            return String.format("(%s %s %s)", expressionToString(bin.left), bin.op, expressionToString(bin.right));
 //        }
-//
-//        // العمليات الأحادية
 //        if (expr instanceof OneOperationExprssion) {
 //            OneOperationExprssion un = (OneOperationExprssion) expr;
 //            return String.format("%s%s", un.op, expressionToString(un.expr));
 //        }
-//
-//        // عمليات المقارنة
 //        if (expr instanceof CompareExprssion) {
 //            CompareExprssion comp = (CompareExprssion) expr;
 //            StringBuilder result = new StringBuilder(expressionToString(comp.left));
@@ -498,17 +627,6 @@
 //            }
 //            return result.toString();
 //        }
-//
-//        // العمليات الثلاثية
-//        if (expr instanceof ThreeConditionExprssion) {
-//            ThreeConditionExprssion ternary = (ThreeConditionExprssion) expr;
-//            return String.format("%s if %s else %s",
-//                    expressionToString(ternary.thenExpr),
-//                    expressionToString(ternary.condExpr),
-//                    expressionToString(ternary.elseExpr));
-//        }
-//
-//        // القوائم
 //        if (expr instanceof ListExprssion) {
 //            ListExprssion list = (ListExprssion) expr;
 //            StringBuilder items = new StringBuilder();
@@ -520,8 +638,6 @@
 //            }
 //            return "[" + items + "]";
 //        }
-//
-//        // المجموعات (Tuple)
 //        if (expr instanceof TupleExprssion) {
 //            TupleExprssion tuple = (TupleExprssion) expr;
 //            StringBuilder items = new StringBuilder();
@@ -531,13 +647,17 @@
 //                    items.append(expressionToString(tuple.items.get(i)));
 //                }
 //            }
+//
+//            // 🔥 الإصلاح الذكي للحماية من توليد الفاصلة والأقواس الزائدة مع الـ Generator التعبيري الممرر لدالة
 //            if (tuple.items != null && tuple.items.size() == 1) {
+//                ExpressionAtom singleItem = tuple.items.get(0);
+//                if (singleItem instanceof ComplexListOfFor && ((ComplexListOfFor) singleItem).type == TypeOfFor_Complex.GENERATOR) {
+//                    return items.toString();
+//                }
 //                return "(" + items + ",)";
 //            }
 //            return "(" + items + ")";
 //        }
-//
-//        // القواميس
 //        if (expr instanceof DictionaryExprssion) {
 //            DictionaryExprssion dict = (DictionaryExprssion) expr;
 //            StringBuilder items = new StringBuilder();
@@ -551,93 +671,49 @@
 //            }
 //            return "{" + items + "}";
 //        }
-//
-//        // الوسائط المسماة
 //        if (expr instanceof NameArgumentExpr) {
 //            NameArgumentExpr named = (NameArgumentExpr) expr;
 //            return String.format("%s=%s", named.name, expressionToString(named.value));
 //        }
 //
-//        // العمليات التكعيبية (Power)
-//        if (expr instanceof PowerExprssion) {
-//            PowerExprssion power = (PowerExprssion) expr;
-//            return String.format("%s ** %s", expressionToString(power.base), expressionToString(power.exponent));
-//        }
-//
-//        // التعابير المركبة (Comprehension)
-//        if (expr instanceof ComplexListOfFor) {
-//            ComplexListOfFor comp = (ComplexListOfFor) expr;
-//            StringBuilder result = new StringBuilder();
-//            if (comp.type == TypeOfFor_Complex.DICT && comp.key != null) {
-//                result.append("{").append(expressionToString(comp.key)).append(": ").append(expressionToString(comp.body));
-//            } else {
-//                if (comp.type == TypeOfFor_Complex.LIST) result.append("[");
-//                else if (comp.type == TypeOfFor_Complex.GENERATOR) result.append("(");
-//                else result.append("{").append(expressionToString(comp.body));
-//                result.append(expressionToString(comp.body));
-//            }
-//            for (CoplexForExpression clause : comp.forClauses) {
-//                result.append(" for ").append(expressionToString(clause.target));
-//                result.append(" in ").append(expressionToString(clause.iterable));
-//                if (clause.conditions != null) {
-//                    for (ExpressionAtom cond : clause.conditions) {
-//                        result.append(" if ").append(expressionToString(cond));
-//                    }
-//                }
-//            }
-//            if (comp.type == TypeOfFor_Complex.LIST) result.append("]");
-//            else if (comp.type == TypeOfFor_Complex.GENERATOR) result.append(")");
-//            else result.append("}");
-//            return result.toString();
-//        }
-//
 //        return expr.toString();
 //    }
+//
+//
+//
 //
 //    private String sliceToString(SliceTowSubscriptOfAree slice) {
 //        if (slice == null) return "";
 //        StringBuilder sb = new StringBuilder();
 //        if (slice.start != null) sb.append(expressionToString(slice.start));
-//        sb.append(":");
-//        if (slice.end != null) sb.append(expressionToString(slice.end));
-//        if (slice.step != null) {
-//            sb.append(":").append(expressionToString(slice.step));
+//
+//        if (slice.end != null || slice.step != null) {
+//            sb.append(":");
+//            if (slice.end != null) sb.append(expressionToString(slice.end));
+//            if (slice.step != null) {
+//                sb.append(":").append(expressionToString(slice.step));
+//            }
 //        }
 //        return sb.toString();
 //    }
 //
-//    public String getCode() {
-//        return code.toString();
-//    }
+//    public String getCode() { return code.toString(); }
 //
 //    public void saveToFile(String path) throws IOException {
 //        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
 //            writer.write(code.toString());
 //        }
-//        System.out.println("✅ تم إنشاء ملف Flask: " + path);
+//        System.out.println("✅ تم إنشاء ملف Flask مصحح: " + path);
+//    }
+//
+//    public void clear() {
+//        code.setLength(0);
+//        indentLevel = 0;
 //    }
 //}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//
+//
+//
 
 
 
@@ -675,9 +751,77 @@ public class FlaskCodeGenerator {
     private void dedent() { indentLevel--; }
 
     public void generate(Proge program) {
+        Statment mainGuard = null;
+        boolean hasProductsVar = false;
+
         for (Statment stmt : program.statements) {
+            if (stmt instanceof IfStatment && isMainGuard((IfStatment) stmt)) {
+                mainGuard = stmt;
+                continue;
+            }
+            if (stmt instanceof Testlist_Start_ExpressionEqual) {
+                String target = expressionToString(((Testlist_Start_ExpressionEqual) stmt).target);
+                if ("products".equals(target)) {
+                    hasProductsVar = true;
+                }
+            }
             generateStatment(stmt);
         }
+
+        // 🔄 يُضاف تلقائيًا فقط في الملف المُولَّد (لا وجود له في مصدر Flask.py):
+        // بعد كل استجابة، إن تغيّرت قائمة products عن آخر لقطة محفوظة، تُكتب اللقطة
+        // الجديدة إلى ملف مساعد داخلي يقرأه المترجم عند التوليد التالي.
+        if (hasProductsVar) {
+            appendProductsSyncHook();
+        }
+
+        if (mainGuard != null) {
+            generateStatment(mainGuard);
+        }
+    }
+
+    private boolean isMainGuard(IfStatment stmt) {
+        String cond = expressionToString(stmt.condition);
+        return cond != null && cond.contains("__name__");
+    }
+
+    private void appendProductsSyncHook() {
+        appendLine("@app.after_request");
+        appendLine("def __sync_products_state(response):");
+        indent();
+        appendLine("try:");
+        indent();
+        appendLine("__new_state = 'products = ' + str(products)");
+        appendLine("__changed = True");
+        appendLine("try:");
+        indent();
+        appendLine("with open('Files/.products_state.txt', 'r', encoding='utf-8') as __rf:");
+        indent();
+        appendLine("if __rf.read() == __new_state:");
+        indent();
+        appendLine("__changed = False");
+        dedent();
+        dedent();
+        dedent();
+        appendLine("except Exception:");
+        indent();
+        appendLine("pass");
+        dedent();
+        appendLine("if __changed:");
+        indent();
+        appendLine("with open('Files/.products_state.txt', 'w', encoding='utf-8') as __sync_f:");
+        indent();
+        appendLine("__sync_f.write(__new_state)");
+        dedent();
+        dedent();
+        dedent();
+        appendLine("except Exception:");
+        indent();
+        appendLine("pass");
+        dedent();
+        appendLine("return response");
+        dedent();
+        code.append("\n");
     }
 
     private void generateStatment(Statment stmt) {
@@ -752,6 +896,32 @@ public class FlaskCodeGenerator {
 
     private void generateAssignment(Testlist_Start_ExpressionEqual stmt) {
         String target = expressionToString(stmt.target);
+
+        // 🛠️ إصلاح تلقائي (في الكود المُولَّد فقط): "len(products) + 1" غير آمن
+        // كمعرّف جديد — بعد حذف منتج، قد يتكرر id محجوز مسبقًا لمنتج آخر ما زال
+        // موجودًا. نستبدلها بأكبر id حالي + 1 (أو 1 إن كانت القائمة فارغة).
+        if ("new_id".equals(target)) {
+            appendLine("new_id = (max([p['id'] for p in products]) + 1) if products else 1");
+            return;
+        }
+
+        // 🛠️ إصلاح تلقائي (في الكود المُولَّد فقط): مسار UPLOAD_FOLDER النسبي يجعل
+        // مكان حفظ الصورة يختلف عن مكان بحث Flask عنها عبر url_for('static', ...)
+        // (لأن مجلد العمل الحالي للعملية قد لا يطابق مجلد الملف المُولَّد نفسه).
+        // نجعله مسارًا مطلقًا مرتبطًا بمكان generated_app.py نفسه.
+        if ("UPLOAD_FOLDER".equals(target) && stmt.value instanceof StringExpression) {
+            String original = cleanStringValue(((StringExpression) stmt.value).value);
+            String[] parts = original.split("/");
+            StringBuilder args = new StringBuilder("os.path.dirname(os.path.abspath(__file__))");
+            for (String part : parts) {
+                if (!part.isEmpty()) {
+                    args.append(", '").append(part).append("'");
+                }
+            }
+            appendLine("UPLOAD_FOLDER = os.path.join(" + args + ")");
+            return;
+        }
+
         String value = expressionToString(stmt.value);
         appendLine(String.format("%s = %s", target, value));
     }
@@ -1346,6 +1516,41 @@ public class FlaskCodeGenerator {
     }
 
     public String getCode() { return code.toString(); }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  🔄 دمج آخر بيانات فعلية من المتصفح (products) داخل الكود المُولَّد فقط
+    //  Files/Flask.py (المصدر) لا يُمَس إطلاقًا في أي خطوة من هذه العملية.
+    // ═══════════════════════════════════════════════════════════════════════
+    public void applyLiveProductsState(String stateFilePath) {
+        try {
+            java.nio.file.Path p = java.nio.file.Paths.get(stateFilePath);
+            if (!java.nio.file.Files.exists(p)) {
+                return;
+            }
+            String state = java.nio.file.Files.readString(p).trim();
+            if (state.isEmpty() || !state.startsWith("products = [")) {
+                return;
+            }
+
+            String text = code.toString();
+            int start = text.indexOf("products = [");
+            if (start == -1) {
+                return;
+            }
+            int end = text.indexOf("]\n", start);
+            if (end == -1) {
+                return;
+            }
+            end += 1; // تضمين القوس ]
+
+            String newText = text.substring(0, start) + state + text.substring(end);
+            code.setLength(0);
+            code.append(newText);
+
+            System.out.println("   🔄 تم دمج بيانات products الحيّة من المتصفح داخل الملف المُولَّد.");
+        } catch (IOException ignored) {
+        }
+    }
 
     public void saveToFile(String path) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
