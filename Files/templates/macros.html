@@ -54,7 +54,9 @@
     <br/><br/>
 
     {% for p in products %}
-        <div class="product-card" style="width: 220px; background-color: white; padding: 15px; border-radius: 10px; margin: 15px; display: inline-block; box-shadow: 0 0 7px #aaa;">
+        {% include 'products.html' %}
+
+    <div class="product-card" style="width: 220px; background-color: white; padding: 15px; border-radius: 10px; margin: 15px; display: inline-block; box-shadow: 0 0 7px #aaa;">
             <img src="{{ p.image_url }}" style="width: 100%; border-radius: 10px;"/>
             <h3>{{ p.name |upper}}</h3>
             <p>{{ p.price }} $</p>

@@ -1683,8 +1683,55 @@ public class SymbolTableBuilder extends Visitor {
     private boolean isBuiltin(String name) {
         return builtinConstants.contains(name) || builtinFunctions.contains(name);
     }
+//
+//    // 🔥🔥🔥 الكود المعدل هنا 🔥🔥🔥
+//    private void addSymbolToProperScope(Symbol symbol) {
+//        if (symbol == null || symbol.name == null || symbol.name.isEmpty()) {
+//            return;
+//        }
+//
+//        // تجاهل الثوابت المدمجة
+//        if (builtinConstants.contains(symbol.name)) {
+//            return;
+//        }
+//
+//        boolean isGlobal = false;
+//        if (currentScope == globalScope || currentScope.name.equals("program")) {
+//            isGlobal = true;
+//        }
+//
+//        if (symbol instanceof FunctionSymbol && isDecoratedFunction()) {
+//            isGlobal = true;
+//        }
+//
+//        Scope targetScope = isGlobal ? globalScope : currentScope;
+//
+//        // 🔥 التسجيل يجب أن يحدث دائماً في allDeclarations
+//        targetScope.allDeclarations.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol.line);
+//
+//        // التحقق من التكرار
+//        Symbol existing = targetScope.lookupCurrent(symbol.name);
+//        if (existing != null) {
+//            // تم تسجيل السطر في allDeclarations، ولكن لا نضيف الرمز مرة أخرى
+//            System.err.println("[SCOPE ERROR] Variable '" + symbol.name +
+//                    "' already defined in scope '" + targetScope.name +
+//                    "' at line " + existing.line +
+//                    " (redefined at line " + symbol.line + ")");
+//            return;
+//        }
+//
+//        targetScope.addSymbol(symbol);
+//        recordSymbolUsage(symbol);
+//
+//        if (symbol instanceof VariableSymbol) {
+//            VariableSymbol var = (VariableSymbol) symbol;
+//            if (COMPLEX_TYPES.contains(var.type)) {
+//                // معالجة الأنواع المركبة
+//            }
+//        }
+//    }
+//
 
-    // 🔥🔥🔥 الكود المعدل هنا 🔥🔥🔥
     private void addSymbolToProperScope(Symbol symbol) {
         if (symbol == null || symbol.name == null || symbol.name.isEmpty()) {
             return;
@@ -1706,20 +1753,47 @@ public class SymbolTableBuilder extends Visitor {
 
         Scope targetScope = isGlobal ? globalScope : currentScope;
 
-        // 🔥 التسجيل يجب أن يحدث دائماً في allDeclarations
-        targetScope.allDeclarations.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol.line);
+        // 🔥 التسجيل في allDeclarations (حتى لو كان مكرراً)
+        List<Integer> existingLines = targetScope.allDeclarations.get(symbol.name);
+        if (existingLines == null || !existingLines.contains(symbol.line)) {
+            targetScope.allDeclarations.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol.line);
+        }
 
         // التحقق من التكرار
         Symbol existing = targetScope.lookupCurrent(symbol.name);
         if (existing != null) {
-            // تم تسجيل السطر في allDeclarations، ولكن لا نضيف الرمز مرة أخرى
-            System.err.println("[SCOPE ERROR] Variable '" + symbol.name +
-                    "' already defined in scope '" + targetScope.name +
-                    "' at line " + existing.line +
-                    " (redefined at line " + symbol.line + ")");
+            // إذا كان نفس السطر، نتجاهل (تكرار غير حقيقي)
+            if (existing.line == symbol.line) {
+                return;
+            }
+
+            // إذا كان مستورداً، نتجاهل
+            if (existing instanceof VariableSymbol &&
+                    ("imported".equals(((VariableSymbol) existing).type) ||
+                            "module".equals(((VariableSymbol) existing).type))) {
+                return;
+            }
+
+            // 🔥 معالجة الدوال المكررة
+            if (existing instanceof FunctionSymbol && symbol instanceof FunctionSymbol) {
+                // إذا كانت الدالة في نفس النطاق، هذا خطأ Scope
+                if (existing.scope == symbol.scope || existing.scope.name.equals(symbol.scope.name)) {
+                    // لا نضيف الرمز، ولكن تم تسجيله في allDeclarations
+                    return;
+                }
+                // إذا كانت في نطاق مختلف، نسمح بذلك
+                return;
+            }
+
+            // المتغيرات: نسمح بإعادة التعريف في بعض الحالات
+            if (existing instanceof VariableSymbol && symbol instanceof VariableSymbol) {
+                return;
+            }
+
             return;
         }
 
+        // 🔥 إضافة الرمز فقط إذا لم يكن موجوداً
         targetScope.addSymbol(symbol);
         recordSymbolUsage(symbol);
 

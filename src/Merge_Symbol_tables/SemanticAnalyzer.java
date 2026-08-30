@@ -3651,6 +3651,76 @@ public class SemanticAnalyzer {
     // ═══════════════════════════════════════════════════════════════════════
     //  الخطأ 3: Scope Error
     // ═══════════════════════════════════════════════════════════════════════
+//
+//    public void detectScopeErrors() {
+//        System.out.println("  ▶ [الخطأ 3] التحقق من أخطاء النطاق...");
+//        int errorCount = 0;
+//
+//        if (flaskSymbolBuilder != null) {
+//            Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
+//            Set<String> processedNames = new HashSet<>();
+//
+//            for (Map.Entry<String, List<Integer>> entry : globalScope.allDeclarations.entrySet()) {
+//                String varName = entry.getKey();
+//                List<Integer> lines = entry.getValue();
+//
+//                if (varName.equals("True") || varName.equals("False") ||
+//                        varName.equals("None") || varName.equals("__name__")) {
+//                    continue;
+//                }
+//
+//                boolean isFunction = false;
+//                for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
+//                    if (sym instanceof FunctionSymbol && sym.name.equals(varName)) {
+//                        isFunction = true;
+//                        break;
+//                    }
+//                }
+//                if (isFunction) continue;
+//
+//                boolean isImported = false;
+//                for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
+//                    if (sym instanceof VariableSymbol) {
+//                        VariableSymbol var = (VariableSymbol) sym;
+//                        if (var.name.equals(varName) &&
+//                                (var.type.equals("module") || var.type.equals("imported"))) {
+//                            isImported = true;
+//                            break;
+//                        }
+//                    }
+//                }
+//                if (isImported) continue;
+//
+//                Set<Integer> uniqueLines = new LinkedHashSet<>(lines);
+//                if (uniqueLines.size() > 1) {
+//                    List<Integer> sortedLines = new ArrayList<>(uniqueLines);
+//                    Collections.sort(sortedLines);
+//                    int firstLine = sortedLines.get(0);
+//                    for (int i = 1; i < sortedLines.size(); i++) {
+//                        String errorKey = varName + "_" + firstLine + "_" + sortedLines.get(i);
+//                        if (!processedNames.contains(errorKey)) {
+//                            processedNames.add(errorKey);
+//                            table.addError(String.format(
+//                                    "[Scope Error - السطر %d] المتغير '%s' أعيد تعريفه في نفس النطاق (تم تعريفه أول مرة في السطر %d). هذا غير مسموح به في Python.",
+//                                    sortedLines.get(i), varName, firstLine
+//                            ));
+//                            errorCount++;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (errorCount == 0) {
+//            System.out.println("  ✓ لا توجد أخطاء في النطاق");
+//        } else {
+//            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في النطاق");
+//        }
+//        System.out.println();
+//    }
+
+
+
 
     public void detectScopeErrors() {
         System.out.println("  ▶ [الخطأ 3] التحقق من أخطاء النطاق...");
@@ -3664,20 +3734,13 @@ public class SemanticAnalyzer {
                 String varName = entry.getKey();
                 List<Integer> lines = entry.getValue();
 
+                // تجاهل الثوابت المدمجة
                 if (varName.equals("True") || varName.equals("False") ||
                         varName.equals("None") || varName.equals("__name__")) {
                     continue;
                 }
 
-                boolean isFunction = false;
-                for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
-                    if (sym instanceof FunctionSymbol && sym.name.equals(varName)) {
-                        isFunction = true;
-                        break;
-                    }
-                }
-                if (isFunction) continue;
-
+                // تجاهل الاستيرادات
                 boolean isImported = false;
                 for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
                     if (sym instanceof VariableSymbol) {
@@ -3691,20 +3754,49 @@ public class SemanticAnalyzer {
                 }
                 if (isImported) continue;
 
+                // 🔥 إزالة التكرارات من القائمة
                 Set<Integer> uniqueLines = new LinkedHashSet<>(lines);
+
                 if (uniqueLines.size() > 1) {
                     List<Integer> sortedLines = new ArrayList<>(uniqueLines);
                     Collections.sort(sortedLines);
                     int firstLine = sortedLines.get(0);
-                    for (int i = 1; i < sortedLines.size(); i++) {
-                        String errorKey = varName + "_" + firstLine + "_" + sortedLines.get(i);
-                        if (!processedNames.contains(errorKey)) {
-                            processedNames.add(errorKey);
-                            table.addError(String.format(
-                                    "[Scope Error - السطر %d] المتغير '%s' أعيد تعريفه في نفس النطاق (تم تعريفه أول مرة في السطر %d). هذا غير مسموح به في Python.",
-                                    sortedLines.get(i), varName, firstLine
-                            ));
-                            errorCount++;
+
+                    // 🔥 التحقق: هل هذا اسم دالة؟
+                    boolean isFunction = false;
+                    for (ASTFlask.SymbolTable.Symbol sym : globalScope.symbols.values()) {
+                        if (sym instanceof FunctionSymbol && sym.name.equals(varName)) {
+                            isFunction = true;
+                            break;
+                        }
+                    }
+
+                    // 🔥 إذا كانت دالة مكررة في نفس النطاق، هذا خطأ
+                    if (isFunction) {
+                        // نتحقق من أن التكرار في نفس النطاق
+                        for (int i = 1; i < sortedLines.size(); i++) {
+                            String errorKey = varName + "_" + firstLine + "_" + sortedLines.get(i);
+                            if (!processedNames.contains(errorKey)) {
+                                processedNames.add(errorKey);
+                                table.addError(String.format(
+                                        "[Scope Error - السطر %d] الدالة '%s' أعيد تعريفها في نفس النطاق (تم تعريفها أول مرة في السطر %d). هذا غير مسموح به في Python.",
+                                        sortedLines.get(i), varName, firstLine
+                                ));
+                                errorCount++;
+                            }
+                        }
+                    } else {
+                        // متغيرات عادية
+                        for (int i = 1; i < sortedLines.size(); i++) {
+                            String errorKey = varName + "_" + firstLine + "_" + sortedLines.get(i);
+                            if (!processedNames.contains(errorKey)) {
+                                processedNames.add(errorKey);
+                                table.addError(String.format(
+                                        "[Scope Error - السطر %d] المتغير '%s' أعيد تعريفه في نفس النطاق (تم تعريفه أول مرة في السطر %d). هذا غير مسموح به في Python.",
+                                        sortedLines.get(i), varName, firstLine
+                                ));
+                                errorCount++;
+                            }
                         }
                     }
                 }

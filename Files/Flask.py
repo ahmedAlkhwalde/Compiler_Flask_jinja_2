@@ -15,6 +15,7 @@ products = [
     {"id": 3, "name": "Camera", "price": 500, "image": "images.jfif"},
 ]
 
+
 @app.route("/")
 def show_products():
     for p in products:
@@ -72,6 +73,8 @@ def add_product():
 def delete_product(pid):
     products = [p for p in products if p["id"] != pid]
     return redirect("/")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
 
