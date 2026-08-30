@@ -48,12 +48,6 @@ def delete_product(pid):
     products = [p for p in products if p['id'] != pid]
     return redirect('/')
 
-@app.route('/delete/<int:pid>', methods=['POST'])
-def delete_product(pid):
-    global products
-    products = [p for p in products if p['id'] != pid]
-    return redirect('/')
-
 @app.after_request
 def __sync_products_state(response):
     try:

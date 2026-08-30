@@ -2,16 +2,6 @@ package Merge_Symbol_tables;
 
 import java.util.*;
 
-/**
- * ╔══════════════════════════════════════════════════════════════════╗
- * ║              جدول الرموز الموحّد - Python ↔ Jinja2              ║
- * ║                                                                  ║
- * ║  الجدولان مرتبطان ببعض عبر:                                    ║
- * ║  1. linkedTo   : كل رمز يعرف من يقابله في الجانب الآخر         ║
- * ║  2. crossLinks : خريطة ربط مباشرة Python_name ↔ Jinja_name     ║
- * ║  3. validate() : دالة تتحقق من سلامة كل الروابط                ║
- * ╚══════════════════════════════════════════════════════════════════╝
- */
 public class SymbolTable {
 
     // ══════════════════════════════════════════════════════════════
@@ -77,10 +67,7 @@ public class SymbolTable {
     private final Map<String, Symbol> pythonSymbols = new LinkedHashMap<>();
     private final Map<String, Symbol> jinjaSymbols  = new LinkedHashMap<>();
 
-    // ── جدول الروابط المتقاطعة (القلب) ──────────────────────────
-    // crossLinks.get("products") = "products.html"  (Python LIST → Jinja TEMPLATE)
-    // crossLinks.get("show_products") = "products.html" (Python ROUTE → Jinja TEMPLATE)
-    // crossLinks.get("product_loop") = "products"   (Jinja LOOP_VAR → Python LIST)
+
     private final Map<String, String>       crossLinks     = new LinkedHashMap<>();
 
     // خريطة route → template (من Python)
@@ -327,7 +314,7 @@ public class SymbolTable {
 
         // ── الروابط المتقاطعة ─────────────────────────────────────
         System.out.println("╠" + line + "╣");
-        System.out.println("║" + center("🔗  روابط Python ↔ Jinja2  🔗", 90) + "║");
+        System.out.println("║" + center("  روابط Python ↔ Jinja2  ", 90) + "║");
         System.out.println("╠" + line + "╣");
         if (crossLinks.isEmpty()) {
             System.out.println("  (لا توجد روابط مسجّلة)");
