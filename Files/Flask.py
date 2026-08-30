@@ -7,11 +7,12 @@ UPLOAD_FOLDER = 'static/images'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+
 # قائمة المنتجات الافتراضية
 products = [
    {"id": 1, "name": "Laptop", "price": 750, "image": "images.jfif"},
-    {"id": 2, "name": "Headphones", "price": 120, "image": "headphones.jpg"},
-    {"id": 3, "name": "Camera", "price": 500, "image": "camera.jpg"},
+    {"id": 2, "name": "Headphones", "price": 120, "image": "images_1.jfif"},
+    {"id": 3, "name": "Camera", "price": 500, "image": "images.jfif"},
 ]
 
 @app.route("/")
@@ -71,7 +72,6 @@ def add_product():
 def delete_product(pid):
     products = [p for p in products if p["id"] != pid]
     return redirect("/")
-
 if __name__ == "__main__":
     app.run(debug=True)
 

@@ -1731,6 +1731,7 @@ public class SymbolTableBuilder extends Visitor {
         }
     }
 
+
     private boolean isDecoratedFunction() {
         for (int i = scopeStack.size() - 1; i >= 0; i--) {
             if (scopeStack.get(i).name.contains("decorated")) {

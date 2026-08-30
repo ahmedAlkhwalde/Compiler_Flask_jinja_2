@@ -1,5 +1,20 @@
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //package Merge_Symbol_tables;
 //
 //import ASTFlask.*;
@@ -680,6 +695,52 @@
 //
 //
 //    ///////////////////////////////Ahmed sh///////////////////////////////////
+//    ///
+////    ///
+////    public void detectMissingTemplateFile() {
+////        System.out.println("  ▶ [الخطأ 8] التحقق من وجود ملفات القوالب...");
+////        int errorCount = 0;
+////
+////        // جمع أسماء القوالب الموجودة من Jinja Symbol Table
+////        Set<String> existingTemplates = new HashSet<>();
+////        for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
+////            if (sym.kind == SymbolTable.SymbolKind.TEMPLATE) {
+////                existingTemplates.add(sym.name);
+////            }
+////        }
+////
+////        // فحص كل استدعاء render_template في الكود
+////        if (flaskRawCode != null) {
+////            String[] lines = flaskRawCode.split("\n");
+//            Pattern templatePattern = Pattern.compile("render_template\\(\"([^\"]+)\"");
+////
+////            for (int i = 0; i < lines.length; i++) {
+////                String line = lines[i];
+////                int lineNum = i + 1;
+////
+////                Matcher matcher = templatePattern.matcher(line);
+////                while (matcher.find()) {
+////                    String templateName = matcher.group(1);
+////                    if (!existingTemplates.contains(templateName) && !templateName.equals("products.html")) {
+////                        table.addError(String.format(
+////                                "[Missing Template File - السطر %d] ملف القالب '%s' غير موجود",
+////                                lineNum, templateName
+////                        ));
+////                        errorCount++;
+////                    }
+////                }
+////            }
+////        }
+////
+////        if (errorCount == 0) {
+////            System.out.println("  ✓ جميع ملفات القوالب موجودة");
+////        } else {
+////            System.out.println("  ✓ تم اكتشاف " + errorCount + " ملف قالب مفقود");
+////        }
+////        System.out.println();
+////    }
+////
+//
 //    public void detectMissingTemplateFile() {
 //        System.out.println("  ▶ [الخطأ 8] التحقق من وجود ملفات القوالب...");
 //        int errorCount = 0;
@@ -692,7 +753,9 @@
 //            }
 //        }
 //
-//        // فحص كل استدعاء render_template في الكود
+//        // ============================================================
+//        // الجزء 1: فحص render_template في كود Python
+//        // ============================================================
 //        if (flaskRawCode != null) {
 //            String[] lines = flaskRawCode.split("\n");
 //            Pattern templatePattern = Pattern.compile("render_template\\(\"([^\"]+)\"");
@@ -705,11 +768,45 @@
 //                while (matcher.find()) {
 //                    String templateName = matcher.group(1);
 //                    if (!existingTemplates.contains(templateName) && !templateName.equals("products.html")) {
-//                        table.addError(String.format(
-//                                "[Missing Template File - السطر %d] ملف القالب '%s' غير موجود",
-//                                lineNum, templateName
-//                        ));
+//                        // 🔥 استخدام concatenation بدلاً من String.format
+//                        table.addError("[Missing Template File - السطر " + lineNum + "] ملف القالب '" + templateName + "' غير موجود");
 //                        errorCount++;
+//                    }
+//                }
+//            }
+//        }
+//
+//        // ============================================================
+//        // الجزء 2: فحص {% include '...' %} في قوالب Jinja2
+//        // ============================================================
+//        if (jinjaRawCode != null) {
+//            String[] jinjaLines = jinjaRawCode.split("\n");
+//            Pattern includePattern = Pattern.compile("\\{%\\s*include\\s+['\"]([^'\"]+)['\"]\\s*%\\}");
+//
+//            for (int i = 0; i < jinjaLines.length; i++) {
+//                String line = jinjaLines[i];
+//                int lineNum = i + 1;
+//
+//                // تجاهل التعليقات
+//                if (line.trim().startsWith("{#")) continue;
+//                if (line.trim().startsWith("<!--") && line.trim().endsWith("-->")) continue;
+//
+//                Matcher matcher = includePattern.matcher(line);
+//                while (matcher.find()) {
+//                    String includedFile = matcher.group(1);
+//
+//                    // تحقق: هل الملف المطلوب موجود؟
+//                    if (!existingTemplates.contains(includedFile) &&
+//                            !includedFile.equals("products.html") &&
+//                            !includedFile.equals("base.html") &&
+//                            !includedFile.equals("macros.html")) {
+//
+//                        // تحقق إضافي: هل هناك "ignore missing"؟
+//                        if (!line.contains("ignore missing")) {
+//                            // 🔥 استخدام concatenation بدلاً من String.format
+//                            table.addError("[Missing Template File - السطر " + lineNum + "] ملف القالب '" + includedFile + "' المطلوب بواسطة {% include %} غير موجود");
+//                            errorCount++;
+//                        }
 //                    }
 //                }
 //            }
@@ -722,8 +819,6 @@
 //        }
 //        System.out.println();
 //    }
-//
-//
 //
 //
 //    ///////////////////////////////Ahmed sh///////////////////////////////////
@@ -892,7 +987,118 @@
 //
 //
 //
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  🔥🔥🔥 الخطأ 18: Undefined Macro (تمت الإضافة) 🔥🔥🔥
+//    // ═══════════════════════════════════════════════════════════════════════
 //
+//    public void detectUndefinedMacro() {
+//        System.out.println("  ▶ [الخطأ 18] التحقق من الماكروز غير المعرفة...");
+//        int errorCount = 0;
+//
+//        if (jinjaRawCode != null) {
+//            String[] lines = jinjaRawCode.split("\n");
+//
+//            // 🔥 1. جمع جميع تعريفات الماكروز الفعلية (غير المعلقة)
+//            Set<String> definedMacros = new HashSet<>();
+//
+//            // 🔥 متغير لتتبع ما إذا كنا داخل تعليق HTML
+//            boolean insideHtmlComment = false;
+//
+//            for (String line : lines) {
+//                String trimmed = line.trim();
+//
+//                // 🔥 تتبع التعليقات HTML
+//                if (trimmed.contains("<!--")) {
+//                    insideHtmlComment = true;
+//                }
+//                if (trimmed.contains("-->")) {
+//                    insideHtmlComment = false;
+//                    continue;
+//                }
+//
+//                // 🔥 إذا كنا داخل تعليق HTML، نتجاهل كل شيء
+//                if (insideHtmlComment) {
+//                    continue;
+//                }
+//
+//                // 🔥 تجاهل تعليقات Jinja
+//                if (trimmed.startsWith("{#")) {
+//                    continue;
+//                }
+//
+//                // 🔥 البحث عن {% macro ... %}
+//                if (trimmed.startsWith("{% macro ") && trimmed.contains("%}")) {
+//                    // استخراج اسم الماكرو
+//                    String macroDef = trimmed.substring("{% macro ".length());
+//                    String[] parts = macroDef.split("\\s+");
+//                    if (parts.length > 0) {
+//                        String macroName = parts[0].trim();
+//                        if (!macroName.isEmpty()) {
+//                            // إذا كان الاسم متبوعاً بـ (، نستخرج الاسم فقط
+//                            int parenIndex = macroName.indexOf('(');
+//                            if (parenIndex > 0) {
+//                                macroName = macroName.substring(0, parenIndex);
+//                            }
+//                            definedMacros.add(macroName);
+//                            System.out.println("      📌 Found macro definition: " + macroName);
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // 🔥 2. البحث عن استخدامات الماكروز
+//            Pattern macroPattern = Pattern.compile("\\{\\{\\s*macros\\.([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:\\(\\s*\\))?\\s*\\}\\}");
+//
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                int lineNum = i + 1;
+//
+//                String trimmed = line.trim();
+//
+//                // 🔥 تجاهل التعليقات
+//                if (trimmed.startsWith("{#")) continue;
+//                if (trimmed.contains("<!--") && trimmed.contains("-->")) {
+//                    if (trimmed.startsWith("<!--") && trimmed.endsWith("-->")) {
+//                        continue;
+//                    }
+//                }
+//
+//                Matcher matcher = macroPattern.matcher(line);
+//                while (matcher.find()) {
+//                    String macroName = matcher.group(1);
+//
+//                    // 🔥 التحقق: هل هذا الماكرو معرف؟
+//                    if (!definedMacros.contains(macroName)) {
+//                        // 🔥 تحقق إضافي: هل هناك استيراد للماكروز؟
+//                        boolean hasImport = jinjaRawCode.contains("import macros") ||
+//                                jinjaRawCode.contains("from macros");
+//
+//                        // 🔥🔥🔥 استخدم %%%% بدلاً من % في النص
+//                        if (!hasImport) {
+//                            table.addError(String.format(
+//                                    "[Undefined Macro - السطر %d] الماكرو 'macros.%s()' غير معرف. تأكد من: 1) تعريفه باستخدام {%%%% macro %%%%}, 2) استيراده باستخدام {%%%% import %%%%}",
+//                                    lineNum, macroName
+//                            ));
+//                            errorCount++;
+//                        } else {
+//                            table.addError(String.format(
+//                                    "[Undefined Macro - السطر %d] الماكرو 'macros.%s()' غير معرف. تأكد من تعريفه في ملف الماكروز.",
+//                                    lineNum, macroName
+//                            ));
+//                            errorCount++;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (errorCount == 0) {
+//            System.out.println("  ✓ جميع الماكروز معرفة");
+//        } else {
+//            System.out.println("  ✓ تم اكتشاف " + errorCount + " ماكرو غير معرف");
+//        }
+//        System.out.println();
+//    }
 //
 //    public void detectMissingEndTags() {
 //        System.out.println("  ▶ [الخطأ 19-20] التحقق من علامات الإغلاق المفقودة...");
@@ -937,13 +1143,29 @@
 //            int ifCountRaw = 0;
 //            int endifCountRaw = 0;
 //
+//            // 🔥 متغيرات لتتبع حالة if
+//            boolean insideIf = false;
+//            int ifDepth = 0;
+//
 //            for (String line : lines) {
 //                String trimmed = line.trim();
 //
-//                // تجاهل التعليقات
+//                // 🔥🔥🔥 تجاهل التعليقات تماماً (Jinja و HTML)
 //                if (trimmed.startsWith("{#")) continue;
 //
-//                // البحث عن {% for ... %} (وليس {% endfor %})
+//                // 🔥🔥🔥 تجاهل سطور التعليقات HTML التي تحتوي على أوامر Jinja
+//                // نتحقق إذا كان السطر يحتوي على <!-- و --> (تعليق HTML)
+//                if (trimmed.contains("<!--") && trimmed.contains("-->")) {
+//                    // إذا كان السطر بأكمله معلقاً، نتجاهله
+//                    if (trimmed.startsWith("<!--") && trimmed.endsWith("-->")) {
+//                        System.out.println("      🔍 Skipping HTML comment line: " + trimmed);
+//                        continue;
+//                    }
+//                    // إذا كان التعليق جزئياً، نستخرج الجزء غير المعلق
+//                    // ولكن الأسهل: نتجاهل السطور التي تبدأ بـ <!-- وتنتهي بـ -->
+//                }
+//
+//                // 🔥🔥🔥 البحث عن {% for ... %} (وليس {% endfor %})
 //                if (trimmed.startsWith("{% for ") && !trimmed.contains("endfor")) {
 //                    forCountRaw++;
 //                    System.out.println("      🔍 Found {% for %} at line: " + trimmed);
@@ -955,22 +1177,45 @@
 //                    System.out.println("      🔍 Found {% endfor %} at line: " + trimmed);
 //                }
 //
-//                // البحث عن {% if ... %} (وليس {% endif %})
-//                if (trimmed.startsWith("{% if ") && !trimmed.contains("endif") && !trimmed.contains("elif")) {
-//                    ifCountRaw++;
-//                    System.out.println("      🔍 Found {% if %} at line: " + trimmed);
+//                // 🔥🔥🔥 البحث عن {% if ... %} بشكل صحيح
+//                // نبحث عن if جديد فقط (ليس elif أو else)
+//                if (trimmed.startsWith("{% if ") &&
+//                        !trimmed.contains("endif") &&
+//                        !trimmed.contains("elif") &&
+//                        !trimmed.contains("else")) {
+//
+//                    // 🔥 نتحقق من أن هذا ليس elif أو else
+//                    if (!trimmed.matches(".*\\{%\\s*(elif|else)\\s+.*")) {
+//                        ifCountRaw++;
+//                        insideIf = true;
+//                        ifDepth++;
+//                        System.out.println("      🔍 Found {% if %} at line: " + trimmed);
+//                    }
+//                }
+//
+//                // البحث عن {% elif ... %} - لا نحسبها كـ if جديدة
+//                if (trimmed.startsWith("{% elif ") || trimmed.contains("{% elif ")) {
+//                    System.out.println("      🔍 Found {% elif %} (ignored, not a new if) at line: " + trimmed);
+//                }
+//
+//                // البحث عن {% else %} - لا نحسبها كـ if جديدة
+//                if (trimmed.startsWith("{% else %}") || trimmed.contains("{% else %}")) {
+//                    System.out.println("      🔍 Found {% else %} (ignored, not a new if) at line: " + trimmed);
 //                }
 //
 //                // البحث عن {% endif %}
 //                if (trimmed.startsWith("{% endif %}") || trimmed.contains("endif")) {
 //                    endifCountRaw++;
+//                    ifDepth--;
+//                    if (ifDepth == 0) {
+//                        insideIf = false;
+//                    }
 //                    System.out.println("      🔍 Found {% endif %} at line: " + trimmed);
 //                }
 //            }
 //
 //            // 🔥 مقارنة النتائج من النص الخام (للتأكيد)
 //            if (forCountRaw != endforCountRaw && forCountRaw > 0) {
-//                // نتحقق إذا كان الخطأ قد تم تسجيله بالفعل من الجدول
 //                boolean alreadyReported = false;
 //                for (String error : table.getErrors()) {
 //                    if (error.contains("عدد حلقات for") && error.contains("لا يتطابق")) {
@@ -1016,6 +1261,131 @@
 //        System.out.println();
 //    }
 //
+//
+//
+////    public void detectMissingEndTags() {
+////        System.out.println("  ▶ [الخطأ 19-20] التحقق من علامات الإغلاق المفقودة...");
+////        int errorCount = 0;
+////
+////        // ============================================================
+////        // 🔥 الجزء 1: استخدام جدول الرموز
+////        // ============================================================
+////        if (jinjaSymbolTable != null) {
+////            int forCount = jinjaSymbolTable.getForBlockCount();
+////            int endforCount = jinjaSymbolTable.getEndforCount();
+////            int ifCount = jinjaSymbolTable.getIfBlockCount();
+////            int endifCount = jinjaSymbolTable.getEndifCount();
+////
+////            System.out.println("      📊 for blocks: " + forCount + " | endfor: " + endforCount);
+////            System.out.println("      📊 if blocks: " + ifCount + " | endif: " + endifCount);
+////
+////            if (forCount != endforCount) {
+////                table.addError(String.format(
+////                        "[Missing End Tag] عدد حلقات for (%d) لا يتطابق مع عدد endfor (%d)",
+////                        forCount, endforCount
+////                ));
+////                errorCount++;
+////            }
+////
+////            if (ifCount != endifCount) {
+////                table.addError(String.format(
+////                        "[Missing End Tag] عدد جمل if (%d) لا يتطابق مع عدد endif (%d)",
+////                        ifCount, endifCount
+////                ));
+////                errorCount++;
+////            }
+////        }
+////
+////        // ============================================================
+////        // 🔥 الجزء 2: فحص إضافي مباشر على النص الخام (للتأكد)
+////        // ============================================================
+////        if (jinjaRawCode != null) {
+////            String[] lines = jinjaRawCode.split("\n");
+////            int forCountRaw = 0;
+////            int endforCountRaw = 0;
+////            int ifCountRaw = 0;
+////            int endifCountRaw = 0;
+////
+////            for (String line : lines) {
+////                String trimmed = line.trim();
+////
+////                // تجاهل التعليقات
+////                if (trimmed.startsWith("{#")) continue;
+////
+////                // البحث عن {% for ... %} (وليس {% endfor %})
+////                if (trimmed.startsWith("{% for ") && !trimmed.contains("endfor")) {
+////                    forCountRaw++;
+////                    System.out.println("      🔍 Found {% for %} at line: " + trimmed);
+////                }
+////
+////                // البحث عن {% endfor %}
+////                if (trimmed.startsWith("{% endfor %}") || trimmed.contains("endfor")) {
+////                    endforCountRaw++;
+////                    System.out.println("      🔍 Found {% endfor %} at line: " + trimmed);
+////                }
+////
+////                // البحث عن {% if ... %} (وليس {% endif %})
+////                if (trimmed.startsWith("{% if ") && !trimmed.contains("endif") && !trimmed.contains("elif")) {
+////                    ifCountRaw++;
+////                    System.out.println("      🔍 Found {% if %} at line: " + trimmed);
+////                }
+////
+////                // البحث عن {% endif %}
+////                if (trimmed.startsWith("{% endif %}") || trimmed.contains("endif")) {
+////                    endifCountRaw++;
+////                    System.out.println("      🔍 Found {% endif %} at line: " + trimmed);
+////                }
+////            }
+////
+////            // 🔥 مقارنة النتائج من النص الخام (للتأكيد)
+////            if (forCountRaw != endforCountRaw && forCountRaw > 0) {
+////                // نتحقق إذا كان الخطأ قد تم تسجيله بالفعل من الجدول
+////                boolean alreadyReported = false;
+////                for (String error : table.getErrors()) {
+////                    if (error.contains("عدد حلقات for") && error.contains("لا يتطابق")) {
+////                        alreadyReported = true;
+////                        break;
+////                    }
+////                }
+////                if (!alreadyReported) {
+////                    table.addError(String.format(
+////                            "[Missing End Tag] (من النص الخام) عدد حلقات for (%d) لا يتطابق مع عدد endfor (%d)",
+////                            forCountRaw, endforCountRaw
+////                    ));
+////                    errorCount++;
+////                }
+////            }
+////
+////            if (ifCountRaw != endifCountRaw && ifCountRaw > 0) {
+////                boolean alreadyReported = false;
+////                for (String error : table.getErrors()) {
+////                    if (error.contains("عدد جمل if") && error.contains("لا يتطابق")) {
+////                        alreadyReported = true;
+////                        break;
+////                    }
+////                }
+////                if (!alreadyReported) {
+////                    table.addError(String.format(
+////                            "[Missing End Tag] (من النص الخام) عدد جمل if (%d) لا يتطابق مع عدد endif (%d)",
+////                            ifCountRaw, endifCountRaw
+////                    ));
+////                    errorCount++;
+////                }
+////            }
+////        }
+////
+////        // ============================================================
+////        // 🔥 عرض النتائج
+////        // ============================================================
+////        if (errorCount == 0) {
+////            System.out.println("  ✓ جميع علامات الإغلاق موجودة");
+////        } else {
+////            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في علامات الإغلاق");
+////        }
+////        System.out.println();
+////    }
+////
+////
 //    // ═══════════════════════════════════════════════════════════════════════
 //    //  الخطأ 26: Division by Zero
 //    // ═══════════════════════════════════════════════════════════════════════
@@ -1550,7 +1920,6 @@
 //
 //
 //
-//
 //    // ═══════════════════════════════════════════════════════════════════════
 //    //  الخطأ 31: Value Error
 //    // ═══════════════════════════════════════════════════════════════════════
@@ -1881,6 +2250,7 @@
 //        detectMissingSecretKey();          // 10
 //        detectUndefinedTemplateVariable(); // 16
 //        detectUndefinedFilter();           // 17
+//        detectUndefinedMacro();            // 18 🔥 تمت الإضافة
 //        detectMissingEndTags();            // 19-20
 //        detectDivisionByZero();            // 26
 //        detectIndexOutOfRange();           // 27
@@ -1963,15 +2333,6 @@
 //        }
 //    }
 //}
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2362,6 +2723,932 @@ public class SemanticAnalyzer {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  الخطأ 50: Spelling Error in Python Code (جديد)
+    // ═══════════════════════════════════════════════════════════════════════
+
+//
+//    public void detectSpellingErrorsInPython() {
+//        System.out.println("  ▶ [الخطأ 50] التحقق من الأخطاء الإملائية في كود Python...");
+//        int errorCount = 0;
+//
+//        if (flaskRawCode == null) {
+//            System.out.println("  ⚠ لا يوجد كود Python للفحص");
+//            System.out.println();
+//            return;
+//        }
+//
+//        // جمع جميع الأسماء الصحيحة المعرفة في Python
+//        Set<String> correctNames = new HashSet<>();
+//        for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
+//            correctNames.add(sym.name);
+//        }
+//        // إضافة الكلمات المفتاحية والدوال المدمجة
+//        correctNames.addAll(PYTHON_KEYWORDS);
+//        correctNames.add("True");
+//        correctNames.add("False");
+//        correctNames.add("None");
+//        correctNames.add("print");
+//        correctNames.add("len");
+//        correctNames.add("range");
+//        correctNames.add("str");
+//        correctNames.add("int");
+//        correctNames.add("float");
+//        correctNames.add("list");
+//        correctNames.add("dict");
+//        correctNames.add("tuple");
+//        correctNames.add("set");
+//        correctNames.add("url_for");
+//        correctNames.add("render_template");
+//        correctNames.add("redirect");
+//        correctNames.add("request");
+//        correctNames.add("Flask");
+//        correctNames.add("secure_filename");
+//        correctNames.add("os");
+//
+//        String[] lines = flaskRawCode.split("\n");
+//
+//        // نمط للبحث عن أسماء المتغيرات في كود Python
+//        Pattern varPattern = Pattern.compile("\\b(for|in)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\b");
+//        Pattern assignmentPattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*=");
+//        Pattern functionCallPattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(");
+//
+//        for (int i = 0; i < lines.length; i++) {
+//            String line = lines[i];
+//            int lineNum = i + 1;
+//
+//            // تجاهل الأسطر الفارغة والتعليقات
+//            if (line.trim().isEmpty() || line.trim().startsWith("#")) {
+//                continue;
+//            }
+//
+//            // 1. فحص متغيرات حلقات for
+//            Matcher forMatcher = varPattern.matcher(line);
+//            while (forMatcher.find()) {
+//                String varName = forMatcher.group(2);
+//                // تجاهل المتغيرات المعروفة
+//                if (correctNames.contains(varName)) {
+//                    continue;
+//                }
+//                // تحقق: هل هذا المتغير معرّف؟
+//                boolean isDefined = false;
+//                for (String correctName : correctNames) {
+//                    if (correctName.equals(varName)) {
+//                        isDefined = true;
+//                        break;
+//                    }
+//                }
+//                if (!isDefined) {
+//                    String suggestion = findClosestMatch(varName, correctNames);
+//                    table.addError(String.format(
+//                            "[Spelling Error in Python - السطر %d] المتغير '%s' غير معرف. %s",
+//                            lineNum, varName,
+//                            suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "تأكد من كتابته بشكل صحيح"
+//                    ));
+//                    errorCount++;
+//                }
+//            }
+//
+//            // 2. فحص أسماء الدوال المستدعاة
+//            Matcher callMatcher = functionCallPattern.matcher(line);
+//            while (callMatcher.find()) {
+//                String funcName = callMatcher.group(1);
+//                // تجاهل الكلمات المفتاحية والدوال المدمجة
+//                if (correctNames.contains(funcName) || PYTHON_KEYWORDS.contains(funcName)) {
+//                    continue;
+//                }
+//                // إذا كان الاسم يبدو وكأنه دالة (ينتهي بـ ( )
+//                if (line.contains(funcName + "(")) {
+//                    // تحقق مما إذا كانت دالة معرفة
+//                    boolean isFunction = false;
+//                    for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
+//                        if (sym.kind == SymbolTable.SymbolKind.ROUTE ||
+//                                (sym.name.equals(funcName) && sym.type.equals("function"))) {
+//                            isFunction = true;
+//                            break;
+//                        }
+//                    }
+//                    if (!isFunction && !correctNames.contains(funcName)) {
+//                        String suggestion = findClosestMatch(funcName, correctNames);
+//                        // تجاهل بعض الحالات الخاصة
+//                        if (!funcName.equals("url_for") && !funcName.equals("render_template") &&
+//                                !funcName.equals("redirect") && !funcName.equals("request") &&
+//                                !funcName.equals("Flask") && !funcName.equals("secure_filename") &&
+//                                !funcName.equals("os")) {
+//                            table.addError(String.format(
+//                                    "[Spelling Error in Python - السطر %d] الدالة '%s()' غير معرفة. %s",
+//                                    lineNum, funcName,
+//                                    suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "تأكد من كتابتها بشكل صحيح"
+//                            ));
+//                            errorCount++;
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // 3. فحص خاص: البحث عن productss (الخطأ المحدد)
+//            if (line.contains("productss")) {
+//                // تحقق: هل المتغير productss معرف؟
+//                boolean isDefined = false;
+//                for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
+//                    if (sym.name.equals("productss")) {
+//                        isDefined = true;
+//                        break;
+//                    }
+//                }
+//                if (!isDefined) {
+//                    table.addError(String.format(
+//                            "[Spelling Error in Python - السطر %d] المتغير 'productss' غير معرف. هل تقصد 'products'؟",
+//                            lineNum
+//                    ));
+//                    errorCount++;
+//                }
+//            }
+//        }
+//
+//        if (errorCount == 0) {
+//            System.out.println("  ✓ لا توجد أخطاء إملائية في كود Python");
+//        } else {
+//            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ إملائي في كود Python");
+//        }
+//        System.out.println();
+//    }
+//
+
+//
+//    public void detectSpellingErrorsInPython() {
+//        System.out.println("  ▶ [الخطأ 50] التحقق من الأخطاء الإملائية في كود Python...");
+//        int errorCount = 0;
+//
+//        if (flaskRawCode == null) {
+//            System.out.println("  ⚠ لا يوجد كود Python للفحص");
+//            System.out.println();
+//            return;
+//        }
+//
+//        // 🔥 1. جمع المتغيرات المعروفة من جدول الرموز
+//        Set<String> globalVariables = new HashSet<>();
+//        for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
+//            globalVariables.add(sym.name);
+//        }
+//
+//        // 🔥 2. جمع المتغيرات المعرفة محلياً
+//        Set<String> localVariables = new HashSet<>();
+//
+//        // 2.1 جمع أسماء المعاملات
+//        Pattern paramPattern = Pattern.compile("def\\s+\\w+\\s*\\(([^)]*)\\)");
+//        Matcher paramMatcher = paramPattern.matcher(flaskRawCode);
+//        while (paramMatcher.find()) {
+//            String params = paramMatcher.group(1);
+//            if (!params.trim().isEmpty()) {
+//                String[] paramList = params.split(",");
+//                for (String param : paramList) {
+//                    String cleanParam = param.trim().split(":")[0].trim();
+//                    if (!cleanParam.isEmpty() && !cleanParam.equals("self") && !cleanParam.equals("cls")) {
+//                        localVariables.add(cleanParam);
+//                    }
+//                }
+//            }
+//        }
+//
+//        // 2.2 جمع المتغيرات المعرفة بالتعيين
+//        Pattern assignPattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*=");
+//        Matcher assignMatcher = assignPattern.matcher(flaskRawCode);
+//        while (assignMatcher.find()) {
+//            String varName = assignMatcher.group(1);
+//            if (!PYTHON_KEYWORDS.contains(varName) &&
+//                    !varName.equals("def") && !varName.equals("class") &&
+//                    !varName.equals("import") && !varName.equals("from")) {
+//                localVariables.add(varName);
+//            }
+//        }
+//
+//        // 2.3 جمع متغيرات حلقات for
+//        Pattern forPattern = Pattern.compile("\\bfor\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s+in\\b");
+//        Matcher forMatcher = forPattern.matcher(flaskRawCode);
+//        while (forMatcher.find()) {
+//            String varName = forMatcher.group(1);
+//            localVariables.add(varName);
+//        }
+//
+//        // 🔥 3. الكلمات المدمجة والقيم المعروفة
+//        Set<String> builtins = new HashSet<>(Arrays.asList(
+//                "True", "False", "None", "print", "len", "range", "str", "int",
+//                "float", "list", "dict", "tuple", "set", "type", "isinstance",
+//                "issubclass", "hasattr", "getattr", "setattr", "delattr",
+//                "property", "staticmethod", "classmethod", "super", "object",
+//                "BaseException", "Exception", "ValueError", "TypeError",
+//                "IndexError", "KeyError", "AttributeError", "NameError"
+//        ));
+//
+//        // 🔥 4. القيم الصحيحة المعروفة لطرق HTTP
+//        Set<String> knownHttpMethods = new HashSet<>(Arrays.asList(
+//                "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"
+//        ));
+//
+//        // ============================================================
+//        // 🔥🔥🔥 5. استخراج مفاتيح القواميس ديناميكياً من الكود 🔥🔥🔥
+//        // ============================================================
+//
+//        // 5.1 استخراج مفاتيح القواميس من تعريفات القواميس (مثل products = [{"id": 1, "name": "..."}])
+//        Set<String> definedDictKeys = new HashSet<>();
+//
+//        // البحث عن القواميس في القوائم: [{"key": value, ...}]
+//        Pattern dictInListPattern = Pattern.compile("\\[\\s*\\{[^}]*\\}\\s*\\]");
+//        Matcher dictInListMatcher = dictInListPattern.matcher(flaskRawCode);
+//        while (dictInListMatcher.find()) {
+//            String dictContent = dictInListMatcher.group();
+//            // استخراج المفاتيح من داخل القاموس
+//            Pattern keyPattern = Pattern.compile("['\"]?([a-zA-Z_][a-zA-Z0-9_]*)['\"]?\\s*:");
+//            Matcher keyMatcher = keyPattern.matcher(dictContent);
+//            while (keyMatcher.find()) {
+//                String key = keyMatcher.group(1);
+//                if (!key.matches("\\d+")) {
+//                    definedDictKeys.add(key);
+//                }
+//            }
+//        }
+//
+//        // 5.2 البحث عن القواميس المباشرة: {"key": value, ...}
+//        Pattern dictPattern = Pattern.compile("\\{[^{}]*\\}");
+//        Matcher dictMatcher = dictPattern.matcher(flaskRawCode);
+//        while (dictMatcher.find()) {
+//            String dictContent = dictMatcher.group();
+//            // استخراج المفاتيح من داخل القاموس
+//            Pattern keyPattern = Pattern.compile("['\"]?([a-zA-Z_][a-zA-Z0-9_]*)['\"]?\\s*:");
+//            Matcher keyMatcher = keyPattern.matcher(dictContent);
+//            while (keyMatcher.find()) {
+//                String key = keyMatcher.group(1);
+//                if (!key.matches("\\d+")) {
+//                    definedDictKeys.add(key);
+//                }
+//            }
+//        }
+//
+//        // 5.3 البحث عن تعيينات القواميس: dict_name = {"key": value}
+//        Pattern dictAssignPattern = Pattern.compile("\\w+\\s*=\\s*\\{[^{}]*\\}");
+//        Matcher dictAssignMatcher = dictAssignPattern.matcher(flaskRawCode);
+//        while (dictAssignMatcher.find()) {
+//            String dictContent = dictAssignMatcher.group();
+//            Pattern keyPattern = Pattern.compile("['\"]?([a-zA-Z_][a-zA-Z0-9_]*)['\"]?\\s*:");
+//            Matcher keyMatcher = keyPattern.matcher(dictContent);
+//            while (keyMatcher.find()) {
+//                String key = keyMatcher.group(1);
+//                if (!key.matches("\\d+")) {
+//                    definedDictKeys.add(key);
+//                }
+//            }
+//        }
+//
+//        // 5.4 البحث عن مفاتيح القواميس المستخدمة في الوصول: dict["key"] أو dict['key']
+//        Set<String> usedDictKeys = new HashSet<>();
+//        Pattern usedKeyPattern = Pattern.compile("\\[\\s*['\"]([^'\"]+)['\"]\\s*\\]");
+//        Matcher usedKeyMatcher = usedKeyPattern.matcher(flaskRawCode);
+//        while (usedKeyMatcher.find()) {
+//            String key = usedKeyMatcher.group(1);
+//            if (!key.matches("\\d+")) {
+//                usedDictKeys.add(key);
+//            }
+//        }
+//
+//        // ============================================================
+//        // 🔥 6. فحص القيم النصية
+//        // ============================================================
+//
+//        Pattern stringPattern = Pattern.compile("['\"]([^'\"]+)['\"]");
+//        Matcher stringMatcher = stringPattern.matcher(flaskRawCode);
+//
+//        Set<String> stringLiterals = new HashSet<>();
+//        while (stringMatcher.find()) {
+//            stringLiterals.add(stringMatcher.group(1));
+//        }
+//
+//        String[] lines = flaskRawCode.split("\n");
+//
+//        for (int i = 0; i < lines.length; i++) {
+//            String line = lines[i];
+//            int lineNum = i + 1;
+//
+//            if (line.trim().isEmpty() || line.trim().startsWith("#")) {
+//                continue;
+//            }
+//
+//            // ============================================================
+//            // 🔥 7. فحص methods=["..."] - طرق HTTP
+//            // ============================================================
+//            Pattern methodPattern = Pattern.compile("methods\\s*=\\s*\\[([^\\]]+)\\]");
+//            Matcher methodMatcher = methodPattern.matcher(line);
+//            while (methodMatcher.find()) {
+//                String methodsContent = methodMatcher.group(1);
+//                Pattern valPattern = Pattern.compile("['\"]([^'\"]+)['\"]");
+//                Matcher valMatcher = valPattern.matcher(methodsContent);
+//                while (valMatcher.find()) {
+//                    String method = valMatcher.group(1);
+//                    if (!knownHttpMethods.contains(method)) {
+//                        String suggestion = findClosestMatch(method, knownHttpMethods);
+//                        table.addError(String.format(
+//                                "[Spelling Error - السطر %d] طريقة HTTP '%s' غير صحيحة. %s",
+//                                lineNum, method,
+//                                suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "استخدم GET, POST, PUT, أو DELETE"
+//                        ));
+//                        errorCount++;
+//                    }
+//                }
+//            }
+//
+//            // ============================================================
+//            // 🔥 8. فحص مفاتيح القواميس ديناميكياً
+//            // ============================================================
+//            Pattern dictKeyPattern = Pattern.compile("\\[\\s*['\"]([^'\"]+)['\"]\\s*\\]");
+//            Matcher dictKeyMatcher = dictKeyPattern.matcher(line);
+//            while (dictKeyMatcher.find()) {
+//                String key = dictKeyMatcher.group(1);
+//
+//                // إذا كان المفتاح معرفاً في القواميس المعرفة، نتجاوزه
+//                if (definedDictKeys.contains(key)) {
+//                    continue;
+//                }
+//
+//                // إذا كان المفتاح رقماً، نتجاوزه
+//                if (key.matches("\\d+")) {
+//                    continue;
+//                }
+//
+//                // تجاهل المفاتيح المعروفة (طرق HTTP، كلمات مفتاحية)
+//                if (knownHttpMethods.contains(key) || PYTHON_KEYWORDS.contains(key)) {
+//                    continue;
+//                }
+//
+//                // إذا كان هناك أكثر من مفتاح معرف، نحاول إيجاد أقرب تطابق
+//                if (!definedDictKeys.isEmpty()) {
+//                    String suggestion = findClosestMatch(key, definedDictKeys);
+//                    if (suggestion != null && !suggestion.equals(key) && !key.equals(suggestion)) {
+//                        table.addError(String.format(
+//                                "[Spelling Error - السطر %d] مفتاح القاموس '%s' غير معروف. %s",
+//                                lineNum, key,
+//                                suggestion != null ? "المفاتيح المعروفة هي: " + definedDictKeys : "تأكد من كتابته بشكل صحيح"
+//                        ));
+//                        errorCount++;
+//                    }
+//                }
+//            }
+//        }
+//
+//        // ============================================================
+//        // 🔥 9. فحص المتغيرات العادية
+//        // ============================================================
+//
+//        Set<String> usedVariables = new HashSet<>();
+//        Pattern usedPattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b");
+//        Matcher usedMatcher = usedPattern.matcher(flaskRawCode);
+//        while (usedMatcher.find()) {
+//            String word = usedMatcher.group(1);
+//            if (!PYTHON_KEYWORDS.contains(word) &&
+//                    !word.matches("\\d+") &&
+//                    !word.equals("self") && !word.equals("cls") &&
+//                    !stringLiterals.contains(word)) {
+//                usedVariables.add(word);
+//            }
+//        }
+//
+//        Set<String> keysAndAttributes = new HashSet<>();
+//        Pattern keyPattern = Pattern.compile("\\[\\s*['\"]([^'\"]+)['\"]\\s*\\]");
+//        Matcher keyMatcher = keyPattern.matcher(flaskRawCode);
+//        while (keyMatcher.find()) {
+//            keysAndAttributes.add(keyMatcher.group(1));
+//        }
+//
+//        Pattern attrPattern = Pattern.compile("\\.([a-zA-Z_][a-zA-Z0-9_]*)");
+//        Matcher attrMatcher = attrPattern.matcher(flaskRawCode);
+//        while (attrMatcher.find()) {
+//            String attr = attrMatcher.group(1);
+//            if (!PYTHON_KEYWORDS.contains(attr)) {
+//                keysAndAttributes.add(attr);
+//            }
+//        }
+//
+//        Set<String> allKnownNames = new HashSet<>();
+//        allKnownNames.addAll(globalVariables);
+//        allKnownNames.addAll(localVariables);
+//        allKnownNames.addAll(builtins);
+//        allKnownNames.addAll(PYTHON_KEYWORDS);
+//        allKnownNames.addAll(knownHttpMethods);
+//        allKnownNames.addAll(definedDictKeys);
+//
+//        usedVariables.removeAll(keysAndAttributes);
+//        usedVariables.removeAll(stringLiterals);
+//
+//        for (String varName : usedVariables) {
+//            if (allKnownNames.contains(varName)) {
+//                continue;
+//            }
+//
+//            if (flaskRawCode.contains(varName + "=")) {
+//                continue;
+//            }
+//
+//            if (flaskRawCode.contains("import " + varName) ||
+//                    flaskRawCode.contains("from " + varName)) {
+//                continue;
+//            }
+//
+//            if (flaskRawCode.contains("def " + varName) ||
+//                    flaskRawCode.contains("class " + varName)) {
+//                continue;
+//            }
+//
+//            if (varName.matches("^[A-Z].*")) {
+//                continue;
+//            }
+//
+//            String suggestion = findClosestMatch(varName, globalVariables);
+//            if (suggestion != null && !suggestion.equals(varName)) {
+//                if (!localVariables.contains(varName)) {
+//                    if (varName.length() >= 3 || globalVariables.contains(suggestion)) {
+//                        table.addError(String.format(
+//                                "[Spelling Error in Python] المتغير '%s' غير معرف في السطر الذي يظهر فيه. %s",
+//                                varName,
+//                                suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "تأكد من كتابته بشكل صحيح"
+//                        ));
+//                        errorCount++;
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (errorCount == 0) {
+//            System.out.println("  ✓ لا توجد أخطاء إملائية في كود Python");
+//        } else {
+//            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ إملائي في كود Python");
+//        }
+//        System.out.println();
+//    }
+//
+
+
+
+    public void detectSpellingErrorsInPython() {
+        System.out.println("  ▶ [الخطأ 50] التحقق من الأخطاء الإملائية في كود Python...");
+        int errorCount = 0;
+
+        if (flaskRawCode == null) {
+            System.out.println("  ⚠ لا يوجد كود Python للفحص");
+            System.out.println();
+            return;
+        }
+
+        // ============================================================
+        // 🔥 1. جمع المتغيرات المعرفة
+        // ============================================================
+        Set<String> definedVariables = new HashSet<>();
+
+        // 1.1 من جدول الرموز (المتغيرات العامة)
+        for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
+            definedVariables.add(sym.name);
+        }
+
+        // 1.2 من التعيينات (var = ...)
+        Pattern assignPattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*=");
+        Matcher assignMatcher = assignPattern.matcher(flaskRawCode);
+        while (assignMatcher.find()) {
+            String varName = assignMatcher.group(1);
+            // تجاهل الكلمات المفتاحية
+            if (!PYTHON_KEYWORDS.contains(varName) &&
+                    !varName.equals("def") && !varName.equals("class") &&
+                    !varName.equals("import") && !varName.equals("from") &&
+                    !varName.equals("return") && !varName.equals("yield") &&
+                    !varName.equals("if") && !varName.equals("else") &&
+                    !varName.equals("elif") && !varName.equals("for") &&
+                    !varName.equals("while") && !varName.equals("try") &&
+                    !varName.equals("except") && !varName.equals("finally") &&
+                    !varName.equals("with") && !varName.equals("as") &&
+                    !varName.equals("assert") && !varName.equals("pass") &&
+                    !varName.equals("lambda") && !varName.equals("in") &&
+                    !varName.equals("is") && !varName.equals("not") &&
+                    !varName.equals("and") && !varName.equals("or")) {
+                definedVariables.add(varName);
+            }
+        }
+
+        // 1.3 من معاملات الدوال
+        Pattern paramPattern = Pattern.compile("def\\s+\\w+\\s*\\(([^)]*)\\)");
+        Matcher paramMatcher = paramPattern.matcher(flaskRawCode);
+        while (paramMatcher.find()) {
+            String params = paramMatcher.group(1);
+            if (!params.trim().isEmpty()) {
+                String[] paramList = params.split(",");
+                for (String param : paramList) {
+                    String cleanParam = param.trim().split(":")[0].trim();
+                    if (!cleanParam.isEmpty() && !cleanParam.equals("self") && !cleanParam.equals("cls")) {
+                        definedVariables.add(cleanParam);
+                    }
+                }
+            }
+        }
+
+        // 1.4 من متغيرات حلقات for
+        Pattern forPattern = Pattern.compile("\\bfor\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s+in\\b");
+        Matcher forMatcher = forPattern.matcher(flaskRawCode);
+        while (forMatcher.find()) {
+            String varName = forMatcher.group(1);
+            if (!PYTHON_KEYWORDS.contains(varName)) {
+                definedVariables.add(varName);
+            }
+        }
+
+        // 1.5 من متغيرات comprehension (مثل (p for p in products))
+        Pattern compPattern = Pattern.compile("\\(\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s+for\\s+\\w+\\s+in\\b");
+        Matcher compMatcher = compPattern.matcher(flaskRawCode);
+        while (compMatcher.find()) {
+            String varName = compMatcher.group(1);
+            if (!PYTHON_KEYWORDS.contains(varName)) {
+                definedVariables.add(varName);
+            }
+        }
+
+        // 1.6 من متغيرات list comprehension (مثل [p for p in products])
+        Pattern listCompPattern = Pattern.compile("\\[\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s+for\\s+\\w+\\s+in\\b");
+        Matcher listCompMatcher = listCompPattern.matcher(flaskRawCode);
+        while (listCompMatcher.find()) {
+            String varName = listCompMatcher.group(1);
+            if (!PYTHON_KEYWORDS.contains(varName)) {
+                definedVariables.add(varName);
+            }
+        }
+
+        // ============================================================
+        // 🔥 2. استخراج مفاتيح القواميس المعرفة
+        // ============================================================
+        Set<String> definedDictKeys = new HashSet<>();
+
+        // 2.1 من القواميس في القوائم: [{"key": value}]
+        Pattern dictInListPattern = Pattern.compile("\\[\\s*\\{[^}]*\\}\\s*\\]");
+        Matcher dictInListMatcher = dictInListPattern.matcher(flaskRawCode);
+        while (dictInListMatcher.find()) {
+            String dictContent = dictInListMatcher.group();
+            Pattern keyPattern = Pattern.compile("['\"]?([a-zA-Z_][a-zA-Z0-9_]*)['\"]?\\s*:");
+            Matcher keyMatcher = keyPattern.matcher(dictContent);
+            while (keyMatcher.find()) {
+                String key = keyMatcher.group(1);
+                if (!key.matches("\\d+")) {
+                    definedDictKeys.add(key);
+                }
+            }
+        }
+
+        // 2.2 من القواميس المباشرة: {"key": value}
+        Pattern dictPattern = Pattern.compile("\\{[^{}]*\\}");
+        Matcher dictMatcher = dictPattern.matcher(flaskRawCode);
+        while (dictMatcher.find()) {
+            String dictContent = dictMatcher.group();
+            Pattern keyPattern = Pattern.compile("['\"]?([a-zA-Z_][a-zA-Z0-9_]*)['\"]?\\s*:");
+            Matcher keyMatcher = keyPattern.matcher(dictContent);
+            while (keyMatcher.find()) {
+                String key = keyMatcher.group(1);
+                if (!key.matches("\\d+")) {
+                    definedDictKeys.add(key);
+                }
+            }
+        }
+
+        // 2.3 البحث عن المفاتيح المستخدمة في تعريفات القواميس
+        Pattern dictKeyDefPattern = Pattern.compile("['\"]?([a-zA-Z_][a-zA-Z0-9_]*)['\"]?\\s*:");
+        Matcher dictKeyDefMatcher = dictKeyDefPattern.matcher(flaskRawCode);
+        while (dictKeyDefMatcher.find()) {
+            String key = dictKeyDefMatcher.group(1);
+            if (!key.matches("\\d+") && !PYTHON_KEYWORDS.contains(key)) {
+                definedDictKeys.add(key);
+            }
+        }
+
+        // ============================================================
+        // 🔥 3. الكلمات التي يجب تجاهلها
+        // ============================================================
+        Set<String> ignoreWords = new HashSet<>();
+        ignoreWords.addAll(PYTHON_KEYWORDS);
+        ignoreWords.addAll(Arrays.asList(
+                // دوال Python المدمجة
+                "print", "len", "range", "str", "int", "float", "list", "dict",
+                "tuple", "set", "type", "isinstance", "issubclass", "hasattr",
+                "getattr", "setattr", "delattr", "property", "staticmethod",
+                "classmethod", "super", "object", "Exception", "ValueError",
+                "TypeError", "IndexError", "KeyError", "AttributeError",
+                "NameError", "abs", "all", "any", "bin", "bool", "bytes",
+                "callable", "chr", "compile", "complex", "dir", "divmod",
+                "enumerate", "eval", "exec", "filter", "format", "frozenset",
+                "globals", "hash", "help", "hex", "id", "input", "iter",
+                "locals", "map", "max", "memoryview", "min", "next", "oct",
+                "open", "ord", "pow", "repr", "reversed", "round", "slice",
+                "sorted", "sum", "vars", "zip", "__import__",
+
+                // دوال Flask
+                "Flask", "render_template", "request", "redirect", "url_for",
+                "secure_filename", "jsonify", "make_response", "abort",
+                "session", "current_app", "send_file", "send_from_directory",
+                "werkzeug", "utils",
+
+                // المكتبات
+                "os", "sys", "json", "time", "datetime", "re", "math",
+                "random", "collections", "itertools", "functools", "typing",
+                "pathlib",
+
+                // دوال القوائم والقاموس
+                "append", "extend", "insert", "remove", "pop", "clear",
+                "index", "count", "sort", "reverse", "copy", "keys",
+                "values", "items", "get", "update", "setdefault",
+
+                // دوال الملفات
+                "open", "read", "write", "close", "seek", "tell", "flush",
+                "mkdir", "makedirs", "join", "exists", "isfile", "isdir",
+                "basename", "dirname", "splitext", "abspath", "relpath",
+                "save", "load",
+
+                // متغيرات Flask الخاصة
+                "config", "run", "debug", "host", "port",
+                "form", "files", "method", "args", "cookies", "headers",
+                "static", "templates", "images", "uploads", "media",
+
+                // دوال HTTP
+                "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS",
+
+                // متغيرات خاصة
+                "__name__", "__main__", "__file__", "__doc__", "__package__"
+        ));
+
+        // إضافة القيم النصية إلى قائمة التجاهل
+        Pattern stringPattern = Pattern.compile("['\"]([^'\"]+)['\"]");
+        Matcher stringMatcher = stringPattern.matcher(flaskRawCode);
+        while (stringMatcher.find()) {
+            String value = stringMatcher.group(1);
+            ignoreWords.add(value);
+            if (value.contains("/")) {
+                String[] parts = value.split("/");
+                for (String part : parts) {
+                    if (!part.isEmpty() && !part.matches("\\d+")) {
+                        ignoreWords.add(part);
+                    }
+                }
+            }
+        }
+
+        // إضافة f-strings
+        Pattern fStringPattern = Pattern.compile("f['\"]([^'\"]+)['\"]");
+        Matcher fStringMatcher = fStringPattern.matcher(flaskRawCode);
+        while (fStringMatcher.find()) {
+            String fStringContent = fStringMatcher.group(1);
+            ignoreWords.add(fStringContent);
+            Pattern textPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_/.]*)");
+            Matcher textMatcher = textPattern.matcher(fStringContent);
+            while (textMatcher.find()) {
+                String text = textMatcher.group(1);
+                if (!text.isEmpty() && !text.matches("\\d+") && !text.contains("{")) {
+                    ignoreWords.add(text);
+                }
+            }
+        }
+
+        // دمج جميع الأسماء المعروفة
+        Set<String> allKnownNames = new HashSet<>();
+        allKnownNames.addAll(definedVariables);
+        allKnownNames.addAll(definedDictKeys);
+        allKnownNames.addAll(ignoreWords);
+
+        // ============================================================
+        // 🔥 4. فحص الكود
+        // ============================================================
+        String[] lines = flaskRawCode.split("\n");
+        Set<String> reportedErrors = new HashSet<>();
+        Set<String> knownHttpMethods = new HashSet<>(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"));
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            int lineNum = i + 1;
+
+            if (line.trim().isEmpty() || line.trim().startsWith("#")) {
+                continue;
+            }
+
+            // نزيل النصوص من السطر
+            String lineWithoutStrings = line.replaceAll("f?['\"][^'\"]*['\"]", "");
+
+            // ============================================================
+            // 🔥 4.1 فحص methods=["..."]
+            // ============================================================
+            Pattern methodPattern = Pattern.compile("methods\\s*=\\s*\\[([^\\]]+)\\]");
+            Matcher methodMatcher = methodPattern.matcher(line);
+            while (methodMatcher.find()) {
+                String methodsContent = methodMatcher.group(1);
+                Pattern valPattern = Pattern.compile("['\"]([^'\"]+)['\"]");
+                Matcher valMatcher = valPattern.matcher(methodsContent);
+                while (valMatcher.find()) {
+                    String method = valMatcher.group(1);
+                    if (!knownHttpMethods.contains(method)) {
+                        String suggestion = findClosestMatch(method, knownHttpMethods);
+                        String errorKey = "method_" + lineNum + "_" + method;
+                        if (!reportedErrors.contains(errorKey)) {
+                            reportedErrors.add(errorKey);
+                            table.addError(String.format(
+                                    "[Spelling Error - السطر %d] طريقة HTTP '%s' غير صحيحة. %s",
+                                    lineNum, method,
+                                    suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "استخدم GET, POST, PUT, أو DELETE"
+                            ));
+                            errorCount++;
+                        }
+                    }
+                }
+            }
+
+            // ============================================================
+            // 🔥 4.2 فحص if request.method
+            // ============================================================
+
+            // 4.2.1 فحص i request.method (خطأ إملائي في if)
+            if (line.contains("i request.method") || line.contains("i request.method == ")) {
+                String errorKey = "if_typo_" + lineNum;
+                if (!reportedErrors.contains(errorKey)) {
+                    reportedErrors.add(errorKey);
+                    table.addError(String.format(
+                            "[Spelling Error - السطر %d] هناك خطأ إملائي في 'if'. هل تقصد 'if request.method'؟",
+                            lineNum
+                    ));
+                    errorCount++;
+                }
+            }
+
+            // 4.2.2 فحص request.method == "XXX"
+            Pattern requestMethodPattern = Pattern.compile("request\\.method\\s*==\\s*['\"]([^'\"]+)['\"]");
+            Matcher requestMethodMatcher = requestMethodPattern.matcher(line);
+            while (requestMethodMatcher.find()) {
+                String method = requestMethodMatcher.group(1);
+                if (!knownHttpMethods.contains(method)) {
+                    String suggestion = findClosestMatch(method, knownHttpMethods);
+                    String errorKey = "request_method_" + lineNum + "_" + method;
+                    if (!reportedErrors.contains(errorKey)) {
+                        reportedErrors.add(errorKey);
+                        table.addError(String.format(
+                                "[Spelling Error - السطر %d] طريقة HTTP '%s' غير صحيحة. %s",
+                                lineNum, method,
+                                suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "استخدم GET, POST, PUT, أو DELETE"
+                        ));
+                        errorCount++;
+                    }
+                }
+            }
+
+            // ============================================================
+            // 🔥 4.3 فحص حلقات for
+            // ============================================================
+
+            // 4.3.1 فحص for X in Y
+            Pattern forPattern2 = Pattern.compile("\\bfor\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s+in\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\b");
+            Matcher forMatcher2 = forPattern2.matcher(lineWithoutStrings);
+            while (forMatcher2.find()) {
+                String loopVar = forMatcher2.group(1);
+                String iterable = forMatcher2.group(2);
+
+                // فحص متغير الحلقة (X)
+                if (!definedVariables.contains(loopVar) && !ignoreWords.contains(loopVar)) {
+                    boolean isDefined = false;
+                    for (int j = i; j < Math.min(i + 5, lines.length); j++) {
+                        if (lines[j].contains(loopVar + "[")) {
+                            isDefined = true;
+                            break;
+                        }
+                    }
+                    if (!isDefined) {
+                        String suggestion = findClosestMatch(loopVar, definedVariables);
+                        if (suggestion != null && !suggestion.equals(loopVar)) {
+                            String errorKey = "loop_var_" + lineNum + "_" + loopVar;
+                            if (!reportedErrors.contains(errorKey)) {
+                                reportedErrors.add(errorKey);
+                                table.addError(String.format(
+                                        "[Spelling Error - السطر %d] متغير الحلقة '%s' غير معرف. هل تقصد '%s'؟",
+                                        lineNum, loopVar, suggestion
+                                ));
+                                errorCount++;
+                            }
+                        }
+                    }
+                }
+
+                // فحص المتغير الذي يلي in (Y)
+                if (!definedVariables.contains(iterable) && !ignoreWords.contains(iterable)) {
+                    String suggestion = findClosestMatch(iterable, definedVariables);
+                    if (suggestion != null && !suggestion.equals(iterable)) {
+                        String errorKey = "for_in_" + lineNum + "_" + iterable;
+                        if (!reportedErrors.contains(errorKey)) {
+                            reportedErrors.add(errorKey);
+                            table.addError(String.format(
+                                    "[Spelling Error - السطر %d] المتغير '%s' غير معرف في حلقة for. %s",
+                                    lineNum, iterable,
+                                    suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "تأكد من كتابته بشكل صحيح"
+                            ));
+                            errorCount++;
+                        }
+                    }
+                }
+            }
+
+            // ============================================================
+            // 🔥 4.4 فحص مفاتيح القواميس
+            // ============================================================
+            Pattern dictKeyPattern = Pattern.compile("\\[\\s*['\"]([^'\"]+)['\"]\\s*\\]");
+            Matcher dictKeyMatcher = dictKeyPattern.matcher(line);
+            while (dictKeyMatcher.find()) {
+                String key = dictKeyMatcher.group(1);
+
+                if (key.matches("\\d+")) {
+                    continue;
+                }
+
+                if (knownHttpMethods.contains(key) || PYTHON_KEYWORDS.contains(key)) {
+                    continue;
+                }
+
+                boolean isKnownKey = false;
+
+                if (definedDictKeys.contains(key)) {
+                    isKnownKey = true;
+                }
+
+                if (flaskRawCode.contains("\"" + key + "\":") ||
+                        flaskRawCode.contains("'" + key + "':") ||
+                        flaskRawCode.contains("\"" + key + "\" :") ||
+                        flaskRawCode.contains("'" + key + "' :")) {
+                    isKnownKey = true;
+                }
+
+                if (!isKnownKey) {
+                    String suggestion = findClosestMatch(key, definedDictKeys);
+                    if (suggestion != null && !suggestion.equals(key)) {
+                        String errorKey = "dict_key_" + lineNum + "_" + key;
+                        if (!reportedErrors.contains(errorKey)) {
+                            reportedErrors.add(errorKey);
+                            table.addError(String.format(
+                                    "[Spelling Error - السطر %d] مفتاح القاموس '%s' غير معروف. %s",
+                                    lineNum, key,
+                                    suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "المفاتيح المعروفة هي: " + definedDictKeys
+                            ));
+                            errorCount++;
+                        }
+                    }
+                }
+            }
+
+            // ============================================================
+            // 🔥 4.5 فحص المتغيرات العادية
+            // ============================================================
+            Pattern wordPattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b");
+            Matcher wordMatcher = wordPattern.matcher(lineWithoutStrings);
+            while (wordMatcher.find()) {
+                String word = wordMatcher.group(1);
+
+                if (allKnownNames.contains(word)) {
+                    continue;
+                }
+
+                if (word.length() < 2) {
+                    continue;
+                }
+
+                if (word.matches("^[A-Z].*")) {
+                    continue;
+                }
+
+                if (line.contains("." + word) || line.contains(word + "(")) {
+                    continue;
+                }
+
+                String suggestion = findClosestMatch(word, definedVariables);
+                if (suggestion != null && !suggestion.equals(word)) {
+                    String errorKey = "var_" + lineNum + "_" + word;
+                    if (!reportedErrors.contains(errorKey)) {
+                        reportedErrors.add(errorKey);
+                        table.addError(String.format(
+                                "[Spelling Error - السطر %d] المتغير '%s' غير معرف. %s",
+                                lineNum, word,
+                                suggestion != null ? "هل تقصد '" + suggestion + "'؟" : "تأكد من كتابته بشكل صحيح"
+                        ));
+                        errorCount++;
+                    }
+                }
+            }
+        }
+
+        // ============================================================
+        // 🔥 5. عرض النتائج
+        // ============================================================
+        if (errorCount == 0) {
+            System.out.println("  ✓ لا توجد أخطاء إملائية في كود Python");
+        } else {
+            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ إملائي في كود Python");
+        }
+        System.out.println();
+    }
+
+
+
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  الخطأ 3: Scope Error
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -2436,6 +3723,7 @@ public class SemanticAnalyzer {
     //  الخطأ 4: Type Mismatch
     // ═══════════════════════════════════════════════════════════════════════
 
+
     public void detectTypeMismatch() {
         System.out.println("  ▶ [الخطأ 4] التحقق من عدم تطابق الأنواع...");
         int errorCount = 0;
@@ -2443,12 +3731,119 @@ public class SemanticAnalyzer {
 
         if (flaskRawCode != null) {
             errorCount += detectTypeMismatchInRawCode(flaskRawCode);
+
+            // ============================================================
+            // 🔥 فحص إضافي: التحقق من أن المتغيرات المستخدمة في حلقات for
+            // في Jinja هي من النوع الصحيح (List)
+            // ============================================================
+            String[] lines = flaskRawCode.split("\n");
+
+            // 🔥 دمج الأسطر المتعددة للتعيينات
+            StringBuilder mergedCode = new StringBuilder();
+            for (String line : lines) {
+                mergedCode.append(line).append("\n");
+            }
+            String fullCode = mergedCode.toString();
+
+            // 🔥 فحص التعيينات بشكل صحيح مع مراعاة الأسطر المتعددة
+            // نبحث عن الأنماط: variable = [ ... ] أو variable = { ... }
+            Pattern multiLineListPattern = Pattern.compile("\\b(\\w+)\\s*=\\s*\\[[\\s\\S]*?\\](?:\\s*#|\\s*$)");
+            Matcher listMatcher = multiLineListPattern.matcher(fullCode);
+
+            // نجمع أسماء المتغيرات التي تم تعيينها كقوائم بشكل صحيح
+            Set<String> correctlyAssigned = new HashSet<>();
+            while (listMatcher.find()) {
+                String varName = listMatcher.group(1);
+                correctlyAssigned.add(varName);
+            }
+
+            // فحص القواميس
+            Pattern multiLineDictPattern = Pattern.compile("\\b(\\w+)\\s*=\\s*\\{[\\s\\S]*?\\}(?:\\s*#|\\s*$)");
+            Matcher dictMatcher = multiLineDictPattern.matcher(fullCode);
+            while (dictMatcher.find()) {
+                String varName = dictMatcher.group(1);
+                correctlyAssigned.add(varName);
+            }
+
+            for (int i = 0; i < lines.length; i++) {
+                String line = lines[i];
+                int lineNum = i + 1;
+
+                if (line.trim().isEmpty() || line.trim().startsWith("#")) {
+                    continue;
+                }
+
+                // 🔥 إذا كان المتغير معين بشكل صحيح كقائمة أو قاموس، نتجاوزه
+                // نتحقق من السطر الحالي: إذا كان يبدأ بـ products = [ أو products = {
+                if (line.trim().matches("\\b(\\w+)\\s*=\\s*\\[.*") ||
+                        line.trim().matches("\\b(\\w+)\\s*=\\s*\\{.*")) {
+                    // هذا بداية تعريف قائمة أو قاموس، نتجاوزه
+                    continue;
+                }
+
+                // 🔥 فحص: products = "..." (تعيين نصي لقائمة)
+                Pattern stringAssignPattern = Pattern.compile("\\b(\\w+)\\s*=\\s*['\"][^'\"]*['\"]");
+                Matcher stringMatcher = stringAssignPattern.matcher(line);
+                while (stringMatcher.find()) {
+                    String varName = stringMatcher.group(1);
+                    // إذا كان المتغير معين بشكل صحيح كقائمة، نتجاوزه
+                    if (correctlyAssigned.contains(varName)) {
+                        continue;
+                    }
+                    SymbolTable.Symbol sym = table.getPythonSymbol(varName);
+                    if (sym != null && sym.kind == SymbolTable.SymbolKind.LIST) {
+                        table.addError(String.format(
+                                "[Type Mismatch - السطر %d] المتغير '%s' من نوع LIST ولكن تم تعيينه إلى قيمة نصية (string). هذا سيسبب خطأ عند التكرار عليه في Jinja.",
+                                lineNum, varName
+                        ));
+                        errorCount++;
+                    }
+                }
+
+                // 🔥 فحص: products = None (تعيين None لقائمة)
+                Pattern noneAssignPattern = Pattern.compile("\\b(\\w+)\\s*=\\s*None\\b");
+                Matcher noneMatcher = noneAssignPattern.matcher(line);
+                while (noneMatcher.find()) {
+                    String varName = noneMatcher.group(1);
+                    if (correctlyAssigned.contains(varName)) {
+                        continue;
+                    }
+                    SymbolTable.Symbol sym = table.getPythonSymbol(varName);
+                    if (sym != null && sym.kind == SymbolTable.SymbolKind.LIST) {
+                        table.addError(String.format(
+                                "[Type Mismatch - السطر %d] المتغير '%s' من نوع LIST ولكن تم تعيينه إلى None. هذا سيسبب خطأ عند التكرار عليه في Jinja.",
+                                lineNum, varName
+                        ));
+                        errorCount++;
+                    }
+                }
+
+                // 🔥🔥🔥 فحص: len(products) + "1" (جمع int مع string)
+                Pattern lenPlusStringPattern = Pattern.compile("len\\s*\\([^)]*\\)\\s*\\+\\s*['\"][^'\"]*['\"]");
+                Matcher lenMatcher = lenPlusStringPattern.matcher(line);
+                while (lenMatcher.find()) {
+                    table.addError(String.format(
+                            "[Type Mismatch - السطر %d] لا يمكن جمع نتيجة len() (int) مع سلسلة نصية (str). استخدم str(len(products)) أو قم بتحويل النص إلى int",
+                            lineNum
+                    ));
+                    errorCount++;
+                }
+
+                // 🔥🔥🔥 فحص: "1" + len(products) (string + int)
+                Pattern stringPlusLenPattern = Pattern.compile("['\"][^'\"]*['\"]\\s*\\+\\s*len\\s*\\([^)]*\\)");
+                Matcher stringLenMatcher = stringPlusLenPattern.matcher(line);
+                while (stringLenMatcher.find()) {
+                    table.addError(String.format(
+                            "[Type Mismatch - السطر %d] لا يمكن جمع سلسلة نصية مع نتيجة len() (int). استخدم str(len(products)) أو قم بتحويل النص إلى int",
+                            lineNum
+                    ));
+                    errorCount++;
+                }
+            }
         }
 
-        // 🔥🔥🔥 التعديل هنا: إزالة تجاهل products 🔥🔥🔥
         for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
             if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
-                // ✅ نترك add_form فقط (products يتم فحصه الآن)
                 if (sym.linkedTo.equals("add_form")) {
                     continue;
                 }
@@ -2471,6 +3866,129 @@ public class SemanticAnalyzer {
         }
         System.out.println();
     }
+
+//
+//public void detectTypeMismatch() {
+//    System.out.println("  ▶ [الخطأ 4] التحقق من عدم تطابق الأنواع...");
+//    int errorCount = 0;
+//    typeMismatchErrorCount = 0;
+//
+//    if (flaskRawCode != null) {
+//        errorCount += detectTypeMismatchInRawCode(flaskRawCode);
+//
+//        // ============================================================
+//        // 🔥 فحص إضافي: التحقق من أن المتغيرات المستخدمة في حلقات for
+//        // في Jinja هي من النوع الصحيح (List)
+//        // ============================================================
+//        String[] lines = flaskRawCode.split("\n");
+//
+//        // 🔥 دمج الأسطر المتعددة للتعيينات
+//        StringBuilder mergedCode = new StringBuilder();
+//        for (String line : lines) {
+//            mergedCode.append(line).append("\n");
+//        }
+//        String fullCode = mergedCode.toString();
+//
+//        // 🔥 فحص التعيينات بشكل صحيح مع مراعاة الأسطر المتعددة
+//        // نبحث عن الأنماط: variable = [ ... ] أو variable = { ... }
+//        Pattern multiLineListPattern = Pattern.compile("\\b(\\w+)\\s*=\\s*\\[[\\s\\S]*?\\](?:\\s*#|\\s*$)");
+//        Matcher listMatcher = multiLineListPattern.matcher(fullCode);
+//
+//        // نجمع أسماء المتغيرات التي تم تعيينها كقوائم بشكل صحيح
+//        Set<String> correctlyAssigned = new HashSet<>();
+//        while (listMatcher.find()) {
+//            String varName = listMatcher.group(1);
+//            correctlyAssigned.add(varName);
+//        }
+//
+//        // فحص القواميس
+//        Pattern multiLineDictPattern = Pattern.compile("\\b(\\w+)\\s*=\\s*\\{[\\s\\S]*?\\}(?:\\s*#|\\s*$)");
+//        Matcher dictMatcher = multiLineDictPattern.matcher(fullCode);
+//        while (dictMatcher.find()) {
+//            String varName = dictMatcher.group(1);
+//            correctlyAssigned.add(varName);
+//        }
+//
+//        for (int i = 0; i < lines.length; i++) {
+//            String line = lines[i];
+//            int lineNum = i + 1;
+//
+//            if (line.trim().isEmpty() || line.trim().startsWith("#")) {
+//                continue;
+//            }
+//
+//            // 🔥 إذا كان المتغير معين بشكل صحيح كقائمة أو قاموس، نتجاوزه
+//            // نتحقق من السطر الحالي: إذا كان يبدأ بـ products = [ أو products = {
+//            if (line.trim().matches("\\b(\\w+)\\s*=\\s*\\[.*") ||
+//                    line.trim().matches("\\b(\\w+)\\s*=\\s*\\{.*")) {
+//                // هذا بداية تعريف قائمة أو قاموس، نتجاوزه
+//                continue;
+//            }
+//
+//            // 🔥 فحص: products = "..." (تعيين نصي لقائمة)
+//            Pattern stringAssignPattern = Pattern.compile("\\b(\\w+)\\s*=\\s*['\"][^'\"]*['\"]");
+//            Matcher stringMatcher = stringAssignPattern.matcher(line);
+//            while (stringMatcher.find()) {
+//                String varName = stringMatcher.group(1);
+//                // إذا كان المتغير معين بشكل صحيح كقائمة، نتجاوزه
+//                if (correctlyAssigned.contains(varName)) {
+//                    continue;
+//                }
+//                SymbolTable.Symbol sym = table.getPythonSymbol(varName);
+//                if (sym != null && sym.kind == SymbolTable.SymbolKind.LIST) {
+//                    table.addError(String.format(
+//                            "[Type Mismatch - السطر %d] المتغير '%s' من نوع LIST ولكن تم تعيينه إلى قيمة نصية (string). هذا سيسبب خطأ عند التكرار عليه في Jinja.",
+//                            lineNum, varName
+//                    ));
+//                    errorCount++;
+//                }
+//            }
+//
+//            // 🔥 فحص: products = None (تعيين None لقائمة)
+//            Pattern noneAssignPattern = Pattern.compile("\\b(\\w+)\\s*=\\s*None\\b");
+//            Matcher noneMatcher = noneAssignPattern.matcher(line);
+//            while (noneMatcher.find()) {
+//                String varName = noneMatcher.group(1);
+//                if (correctlyAssigned.contains(varName)) {
+//                    continue;
+//                }
+//                SymbolTable.Symbol sym = table.getPythonSymbol(varName);
+//                if (sym != null && sym.kind == SymbolTable.SymbolKind.LIST) {
+//                    table.addError(String.format(
+//                            "[Type Mismatch - السطر %d] المتغير '%s' من نوع LIST ولكن تم تعيينه إلى None. هذا سيسبب خطأ عند التكرار عليه في Jinja.",
+//                            lineNum, varName
+//                    ));
+//                    errorCount++;
+//                }
+//            }
+//        }
+//    }
+//
+//    for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
+//        if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
+//            if (sym.linkedTo.equals("add_form")) {
+//                continue;
+//            }
+//
+//            SymbolTable.Symbol pythonSym = table.getPythonSymbol(sym.linkedTo);
+//            if (pythonSym != null && pythonSym.kind != SymbolTable.SymbolKind.LIST) {
+//                table.addError(String.format(
+//                        "[Type Mismatch - السطر %d] المتغير '%s' من نوع '%s' لا يمكن التكرار عليه في حلقة for (يجب أن يكون list)",
+//                        sym.lineNumber, sym.linkedTo, pythonSym.type
+//                ));
+//                errorCount++;
+//            }
+//        }
+//    }
+//
+//    if (errorCount == 0 && typeMismatchErrorCount == 0) {
+//        System.out.println("  ✓ لا توجد أخطاء في تطابق الأنواع");
+//    } else {
+//        System.out.println("  ✓ تم اكتشاف " + (errorCount + typeMismatchErrorCount) + " خطأ في تطابق الأنواع");
+//    }
+//    System.out.println();
+//}
+//
 
     private int detectTypeMismatchInRawCode(String code) {
         int count = 0;
@@ -2659,9 +4177,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-
-
-
     ///////////////////////////////Ahmed sh///////////////////////////////////
     public void detectMissingTemplateFile() {
         System.out.println("  ▶ [الخطأ 8] التحقق من وجود ملفات القوالب...");
@@ -2675,7 +4190,9 @@ public class SemanticAnalyzer {
             }
         }
 
-        // فحص كل استدعاء render_template في الكود
+        // ============================================================
+        // الجزء 1: فحص render_template في كود Python
+        // ============================================================
         if (flaskRawCode != null) {
             String[] lines = flaskRawCode.split("\n");
             Pattern templatePattern = Pattern.compile("render_template\\(\"([^\"]+)\"");
@@ -2688,11 +4205,41 @@ public class SemanticAnalyzer {
                 while (matcher.find()) {
                     String templateName = matcher.group(1);
                     if (!existingTemplates.contains(templateName) && !templateName.equals("products.html")) {
-                        table.addError(String.format(
-                                "[Missing Template File - السطر %d] ملف القالب '%s' غير موجود",
-                                lineNum, templateName
-                        ));
+                        table.addError("[Missing Template File - السطر " + lineNum + "] ملف القالب '" + templateName + "' غير موجود");
                         errorCount++;
+                    }
+                }
+            }
+        }
+
+        // ============================================================
+        // الجزء 2: فحص {% include '...' %} في قوالب Jinja2
+        // ============================================================
+        if (jinjaRawCode != null) {
+            String[] jinjaLines = jinjaRawCode.split("\n");
+            Pattern includePattern = Pattern.compile("\\{%\\s*include\\s+['\"]([^'\"]+)['\"]\\s*%\\}");
+
+            for (int i = 0; i < jinjaLines.length; i++) {
+                String line = jinjaLines[i];
+                int lineNum = i + 1;
+
+                // تجاهل التعليقات
+                if (line.trim().startsWith("{#")) continue;
+                if (line.trim().startsWith("<!--") && line.trim().endsWith("-->")) continue;
+
+                Matcher matcher = includePattern.matcher(line);
+                while (matcher.find()) {
+                    String includedFile = matcher.group(1);
+
+                    if (!existingTemplates.contains(includedFile) &&
+                            !includedFile.equals("products.html") &&
+                            !includedFile.equals("base.html") &&
+                            !includedFile.equals("macros.html")) {
+
+                        if (!line.contains("ignore missing")) {
+                            table.addError("[Missing Template File - السطر " + lineNum + "] ملف القالب '" + includedFile + "' المطلوب بواسطة {% include %} غير موجود");
+                            errorCount++;
+                        }
                     }
                 }
             }
@@ -2705,9 +4252,6 @@ public class SemanticAnalyzer {
         }
         System.out.println();
     }
-
-
-
 
     ///////////////////////////////Ahmed sh///////////////////////////////////
     public void detectMissingSecretKey() {
@@ -2734,7 +4278,6 @@ public class SemanticAnalyzer {
                 }
             }
 
-            // 🔥 التصحيح هنا: فحص استخدام session من جميع المصادر
             boolean usesSession = false;
 
             // 2. فحص من جدول الرموز الموحد (Python symbols)
@@ -2769,9 +4312,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-
-
-
     ///////////////////////////////Ahmed sh///////////////////////////////////
     public void detectUndefinedTemplateVariable() {
         System.out.println("  ▶ [الخطأ 16] التحقق من المتغيرات غير المعرفة في القالب...");
@@ -2790,9 +4330,8 @@ public class SemanticAnalyzer {
             knownVariables.add("loop_var");
             knownVariables.add("p");
             knownVariables.add("item");
-            knownVariables.add("products");  // القائمة نفسها
+            knownVariables.add("products");
 
-            // 🔥 البحث المباشر في النص الخام
             String[] lines = jinjaRawCode.split("\n");
             Pattern pattern = Pattern.compile("\\{\\{\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\}\\}");
 
@@ -2803,7 +4342,6 @@ public class SemanticAnalyzer {
                 Matcher matcher = pattern.matcher(line);
                 while (matcher.find()) {
                     String varName = matcher.group(1);
-                    // تجاهل المتغيرات المركبة (تحتوي على نقطة أو علامات خاصة)
                     if (!varName.contains(".") && !varName.contains("|") &&
                             !knownVariables.contains(varName)) {
                         table.addError(String.format(
@@ -2824,26 +4362,20 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-
-
     ///////////////////////////////Ahmed sh///////////////////////////////////
     public void detectUndefinedFilter() {
         System.out.println("  ▶ [الخطأ 17] التحقق من الفلاتر غير المعرفة...");
         int errorCount = 0;
 
         if (jinjaRawCode != null) {
-            // البحث المباشر في النص الخام للـ HTML
             String[] lines = jinjaRawCode.split("\n");
 
-            // نمط للبحث عن الفلاتر: {{ something | filterName }}
-            // يمسك: | filterName  أو  | filterName(  أو  | filterName }}
             Pattern filterPattern = Pattern.compile("\\|\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:\\||\\}|\\()");
 
             for (int i = 0; i < lines.length; i++) {
                 String line = lines[i];
                 int lineNum = i + 1;
 
-                // تجاهل الأسطر التي تحتوي على تعليقات Jinja {# #}
                 if (line.trim().startsWith("{#")) {
                     continue;
                 }
@@ -2851,7 +4383,6 @@ public class SemanticAnalyzer {
                 Matcher matcher = filterPattern.matcher(line);
                 while (matcher.find()) {
                     String filterName = matcher.group(1);
-                    // تجاهل الفلاتر المعرفة
                     if (!JINJA_FILTERS.contains(filterName)) {
                         table.addError(String.format(
                                 "[Undefined Filter - السطر %d] الفلتر '%s' غير معرف في Jinja2",
@@ -2871,17 +4402,113 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    //  🔥🔥🔥 الخطأ 18: Undefined Macro
+    // ═══════════════════════════════════════════════════════════════════════
 
+    public void detectUndefinedMacro() {
+        System.out.println("  ▶ [الخطأ 18] التحقق من الماكروز غير المعرفة...");
+        int errorCount = 0;
 
+        if (jinjaRawCode != null) {
+            String[] lines = jinjaRawCode.split("\n");
 
+            Set<String> definedMacros = new HashSet<>();
+            boolean insideHtmlComment = false;
+
+            for (String line : lines) {
+                String trimmed = line.trim();
+
+                if (trimmed.contains("<!--")) {
+                    insideHtmlComment = true;
+                }
+                if (trimmed.contains("-->")) {
+                    insideHtmlComment = false;
+                    continue;
+                }
+
+                if (insideHtmlComment) {
+                    continue;
+                }
+
+                if (trimmed.startsWith("{#")) {
+                    continue;
+                }
+
+                if (trimmed.startsWith("{% macro ") && trimmed.contains("%}")) {
+                    String macroDef = trimmed.substring("{% macro ".length());
+                    String[] parts = macroDef.split("\\s+");
+                    if (parts.length > 0) {
+                        String macroName = parts[0].trim();
+                        if (!macroName.isEmpty()) {
+                            int parenIndex = macroName.indexOf('(');
+                            if (parenIndex > 0) {
+                                macroName = macroName.substring(0, parenIndex);
+                            }
+                            definedMacros.add(macroName);
+                            System.out.println("      📌 Found macro definition: " + macroName);
+                        }
+                    }
+                }
+            }
+
+            Pattern macroPattern = Pattern.compile("\\{\\{\\s*macros\\.([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:\\(\\s*\\))?\\s*\\}\\}");
+
+            for (int i = 0; i < lines.length; i++) {
+                String line = lines[i];
+                int lineNum = i + 1;
+
+                String trimmed = line.trim();
+
+                if (trimmed.startsWith("{#")) continue;
+                if (trimmed.contains("<!--") && trimmed.contains("-->")) {
+                    if (trimmed.startsWith("<!--") && trimmed.endsWith("-->")) {
+                        continue;
+                    }
+                }
+
+                Matcher matcher = macroPattern.matcher(line);
+                while (matcher.find()) {
+                    String macroName = matcher.group(1);
+
+                    if (!definedMacros.contains(macroName)) {
+                        boolean hasImport = jinjaRawCode.contains("import macros") ||
+                                jinjaRawCode.contains("from macros");
+
+                        if (!hasImport) {
+                            table.addError(String.format(
+                                    "[Undefined Macro - السطر %d] الماكرو 'macros.%s()' غير معرف. تأكد من: 1) تعريفه باستخدام {%%%% macro %%%%}, 2) استيراده باستخدام {%%%% import %%%%}",
+                                    lineNum, macroName
+                            ));
+                            errorCount++;
+                        } else {
+                            table.addError(String.format(
+                                    "[Undefined Macro - السطر %d] الماكرو 'macros.%s()' غير معرف. تأكد من تعريفه في ملف الماكروز.",
+                                    lineNum, macroName
+                            ));
+                            errorCount++;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (errorCount == 0) {
+            System.out.println("  ✓ جميع الماكروز معرفة");
+        } else {
+            System.out.println("  ✓ تم اكتشاف " + errorCount + " ماكرو غير معرف");
+        }
+        System.out.println();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  الخطأ 19-20: Missing End Tags
+    // ═══════════════════════════════════════════════════════════════════════
 
     public void detectMissingEndTags() {
         System.out.println("  ▶ [الخطأ 19-20] التحقق من علامات الإغلاق المفقودة...");
         int errorCount = 0;
 
-        // ============================================================
-        // 🔥 الجزء 1: استخدام جدول الرموز
-        // ============================================================
         if (jinjaSymbolTable != null) {
             int forCount = jinjaSymbolTable.getForBlockCount();
             int endforCount = jinjaSymbolTable.getEndforCount();
@@ -2908,9 +4535,6 @@ public class SemanticAnalyzer {
             }
         }
 
-        // ============================================================
-        // 🔥 الجزء 2: فحص إضافي مباشر على النص الخام (للتأكد)
-        // ============================================================
         if (jinjaRawCode != null) {
             String[] lines = jinjaRawCode.split("\n");
             int forCountRaw = 0;
@@ -2918,40 +4542,63 @@ public class SemanticAnalyzer {
             int ifCountRaw = 0;
             int endifCountRaw = 0;
 
+            boolean insideIf = false;
+            int ifDepth = 0;
+
             for (String line : lines) {
                 String trimmed = line.trim();
 
-                // تجاهل التعليقات
                 if (trimmed.startsWith("{#")) continue;
 
-                // البحث عن {% for ... %} (وليس {% endfor %})
+                if (trimmed.contains("<!--") && trimmed.contains("-->")) {
+                    if (trimmed.startsWith("<!--") && trimmed.endsWith("-->")) {
+                        System.out.println("      🔍 Skipping HTML comment line: " + trimmed);
+                        continue;
+                    }
+                }
+
                 if (trimmed.startsWith("{% for ") && !trimmed.contains("endfor")) {
                     forCountRaw++;
                     System.out.println("      🔍 Found {% for %} at line: " + trimmed);
                 }
 
-                // البحث عن {% endfor %}
                 if (trimmed.startsWith("{% endfor %}") || trimmed.contains("endfor")) {
                     endforCountRaw++;
                     System.out.println("      🔍 Found {% endfor %} at line: " + trimmed);
                 }
 
-                // البحث عن {% if ... %} (وليس {% endif %})
-                if (trimmed.startsWith("{% if ") && !trimmed.contains("endif") && !trimmed.contains("elif")) {
-                    ifCountRaw++;
-                    System.out.println("      🔍 Found {% if %} at line: " + trimmed);
+                if (trimmed.startsWith("{% if ") &&
+                        !trimmed.contains("endif") &&
+                        !trimmed.contains("elif") &&
+                        !trimmed.contains("else")) {
+
+                    if (!trimmed.matches(".*\\{%\\s*(elif|else)\\s+.*")) {
+                        ifCountRaw++;
+                        insideIf = true;
+                        ifDepth++;
+                        System.out.println("      🔍 Found {% if %} at line: " + trimmed);
+                    }
                 }
 
-                // البحث عن {% endif %}
+                if (trimmed.startsWith("{% elif ") || trimmed.contains("{% elif ")) {
+                    System.out.println("      🔍 Found {% elif %} (ignored, not a new if) at line: " + trimmed);
+                }
+
+                if (trimmed.startsWith("{% else %}") || trimmed.contains("{% else %}")) {
+                    System.out.println("      🔍 Found {% else %} (ignored, not a new if) at line: " + trimmed);
+                }
+
                 if (trimmed.startsWith("{% endif %}") || trimmed.contains("endif")) {
                     endifCountRaw++;
+                    ifDepth--;
+                    if (ifDepth == 0) {
+                        insideIf = false;
+                    }
                     System.out.println("      🔍 Found {% endif %} at line: " + trimmed);
                 }
             }
 
-            // 🔥 مقارنة النتائج من النص الخام (للتأكيد)
             if (forCountRaw != endforCountRaw && forCountRaw > 0) {
-                // نتحقق إذا كان الخطأ قد تم تسجيله بالفعل من الجدول
                 boolean alreadyReported = false;
                 for (String error : table.getErrors()) {
                     if (error.contains("عدد حلقات for") && error.contains("لا يتطابق")) {
@@ -2986,9 +4633,6 @@ public class SemanticAnalyzer {
             }
         }
 
-        // ============================================================
-        // 🔥 عرض النتائج
-        // ============================================================
         if (errorCount == 0) {
             System.out.println("  ✓ جميع علامات الإغلاق موجودة");
         } else {
@@ -3034,24 +4678,17 @@ public class SemanticAnalyzer {
     //  الخطأ 27: Index Out of Range
     // ═══════════════════════════════════════════════════════════════════════
 
-
     public void detectIndexOutOfRange() {
         System.out.println("  ▶ [الخطأ 27] التحقق من الوصول خارج حدود المصفوفة...");
         int errorCount = 0;
         Set<String> processedErrors = new HashSet<>();
 
-        // ============================================================
-        // 🔥 الجزء 1: تحليل Python
-        // ============================================================
         if (flaskRawCode != null) {
             String[] lines = flaskRawCode.split("\n");
             String fullCode = flaskRawCode;
 
-            // 🔥 خريطة لتخزين أحجام القوائم
             Map<String, Integer> listSizes = new HashMap<>();
 
-            // 🔥 1.1 البحث عن القوائم في الكود
-            // النمط: variable = [ ... ]
             Pattern listPattern = Pattern.compile("(\\w+)\\s*=\\s*\\[([\\s\\S]*?)\\](?:\\s*#|\\s*$)");
             Matcher listMatcher = listPattern.matcher(fullCode);
 
@@ -3059,7 +4696,6 @@ public class SemanticAnalyzer {
                 String listName = listMatcher.group(1);
                 String content = listMatcher.group(2);
 
-                // تجاهل القوائم التي تحتوي على تعبيرات (مثل list comprehensions)
                 if (content.contains("for") || content.contains("if")) {
                     continue;
                 }
@@ -3071,7 +4707,6 @@ public class SemanticAnalyzer {
                 }
             }
 
-            // 🔥 1.2 معالجة خاصة لـ products (إذا لم يتم العثور عليها)
             if (!listSizes.containsKey("products") && fullCode.contains("products = [")) {
                 Pattern productsPattern = Pattern.compile("products\\s*=\\s*\\[([\\s\\S]*?)\\](?:\\s*#|\\s*$)");
                 Matcher productsMatcher = productsPattern.matcher(fullCode);
@@ -3085,13 +4720,11 @@ public class SemanticAnalyzer {
                 }
             }
 
-            // 🔥 1.3 معالجة خاصة لـ form_keys (قائمة ديناميكية)
             if (fullCode.contains("form_keys = list(")) {
                 listSizes.put("form_keys", 0);
                 System.out.println("  📊 Found 'form_keys' (dynamic list)");
             }
 
-            // 🔥 1.4 البحث عن الوصول بالفهرس
             Pattern accessPattern = Pattern.compile("(\\w+)\\s*\\[\\s*(-?\\d+)\\s*\\]");
 
             for (int i = 0; i < lines.length; i++) {
@@ -3105,13 +4738,11 @@ public class SemanticAnalyzer {
                     String arrayName = m.group(1);
                     int index = Integer.parseInt(m.group(2));
 
-                    // تجاهل المصفوفات المعروفة التي لا تسبب مشاكل
                     if (arrayName.equals("request.form") || arrayName.equals("request.files") ||
                             arrayName.equals("form") || arrayName.equals("files")) {
                         continue;
                     }
 
-                    // تجاهل form_keys[0] إذا كانت محمية بشرط
                     if (arrayName.equals("form_keys") && index == 0) {
                         boolean isProtected = false;
                         for (int j = Math.max(0, i - 3); j < i; j++) {
@@ -3124,10 +4755,8 @@ public class SemanticAnalyzer {
                         if (isProtected) continue;
                     }
 
-                    // الحصول على طول القائمة
                     Integer listSize = listSizes.get(arrayName);
 
-                    // إذا كان الفهرس سالباً، نحوله إلى موجب
                     int actualIndex = index;
                     if (index < 0 && listSize != null) {
                         actualIndex = listSize + index;
@@ -3148,17 +4777,12 @@ public class SemanticAnalyzer {
             }
         }
 
-        // ============================================================
-        // 🔥 الجزء 2: تحليل Jinja2 (HTML)
-        // ============================================================
         if (jinjaRawCode != null) {
             String[] jinjaLines = jinjaRawCode.split("\n");
 
-            // 🔥 2.1 البحث عن productss (خطأ إملائي) - يجب أن نعرف حجمها
             Map<String, Integer> jinjaListSizes = new HashMap<>();
-            jinjaListSizes.put("products", 3); // نعرف أن products حجمها 3 من الكود
+            jinjaListSizes.put("products", 3);
 
-            // 🔥 2.2 البحث عن empty_list في Jinja
             for (int i = 0; i < jinjaLines.length; i++) {
                 String line = jinjaLines[i];
                 if (line.contains("set empty_list = []")) {
@@ -3166,14 +4790,11 @@ public class SemanticAnalyzer {
                     System.out.println("  📊 Found 'empty_list' in Jinja with size: 0");
                 }
                 if (line.contains("set filtered = products |")) {
-                    // filtered هي قائمة مشتقة، قد تكون فارغة
                     jinjaListSizes.put("filtered", 0);
                     System.out.println("  📊 Found 'filtered' in Jinja (may be empty)");
                 }
             }
 
-            // 🔥 2.3 البحث عن الوصول بالفهرس في Jinja
-            // النمط: products[رقم] أو products[متغير]
             Pattern jinjaIndexPattern = Pattern.compile("(\\w+)\\s*\\[\\s*(\\d+)\\s*\\]");
             Pattern jinjaVarIndexPattern = Pattern.compile("(\\w+)\\s*\\[\\s*(\\w+)\\s*\\]");
 
@@ -3181,10 +4802,8 @@ public class SemanticAnalyzer {
                 String line = jinjaLines[i];
                 int lineNum = i + 1;
 
-                // تجاهل التعليقات
                 if (line.trim().startsWith("{#")) continue;
 
-                // 🔥 2.3.1 الوصول بالفهرس الثابت
                 Matcher m1 = jinjaIndexPattern.matcher(line);
                 while (m1.find()) {
                     String arrayName = m1.group(1);
@@ -3204,22 +4823,17 @@ public class SemanticAnalyzer {
                     }
                 }
 
-                // 🔥 2.3.2 الوصول بالفهرس المتغير (مثل products[idx])
                 Matcher m2 = jinjaVarIndexPattern.matcher(line);
                 while (m2.find()) {
                     String arrayName = m2.group(1);
                     String varName = m2.group(2);
 
-                    // نتحقق مما إذا كان المتغير يمكن أن يكون خارج النطاق
-                    // نبحث عن حلقة for أو set التي تحدد قيمة المتغير
                     Integer listSize = jinjaListSizes.get(arrayName);
                     if (listSize != null) {
-                        // نبحث عن نطاق المتغير
                         boolean foundRange = false;
                         for (int j = Math.max(0, i - 10); j < i; j++) {
                             if (jinjaLines[j].contains("set " + varName + " =") ||
                                     jinjaLines[j].contains("for " + varName + " in range(")) {
-                                // نستخرج القيمة إذا كانت ثابتة
                                 Pattern setPattern = Pattern.compile("set\\s+" + varName + "\\s*=\\s*(\\d+)");
                                 Matcher setMatcher = setPattern.matcher(jinjaLines[j]);
                                 if (setMatcher.find()) {
@@ -3229,7 +4843,6 @@ public class SemanticAnalyzer {
                                     }
                                 }
 
-                                // نفحص حلقة for مع range
                                 Pattern forPattern = Pattern.compile("for\\s+" + varName + "\\s+in\\s+range\\s*\\(\\s*(\\d+)\\s*\\)");
                                 Matcher forMatcher = forPattern.matcher(jinjaLines[j]);
                                 if (forMatcher.find()) {
@@ -3257,7 +4870,6 @@ public class SemanticAnalyzer {
                 }
             }
 
-            // 🔥 2.4 معالجة خاصة: البحث عن productss (خطأ إملائي) في Jinja
             Pattern productssPattern = Pattern.compile("productss\\s*\\[");
             for (int i = 0; i < jinjaLines.length; i++) {
                 String line = jinjaLines[i];
@@ -3265,8 +4877,6 @@ public class SemanticAnalyzer {
 
                 Matcher m = productssPattern.matcher(line);
                 if (m.find()) {
-                    // productss غير معرف، هذا خطأ إملائي سيتم اكتشافه في مكان آخر
-                    // ولكن نضيف تحذيراً هنا أيضاً
                     table.addError(String.format(
                             "[Index Out of Range - السطر %d] 'productss' غير معرف (هل تقصد 'products'؟)",
                             lineNum
@@ -3276,9 +4886,6 @@ public class SemanticAnalyzer {
             }
         }
 
-        // ============================================================
-        // 🔥 الجزء 3: فحص Jinja Symbols من الجدول
-        // ============================================================
         for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
             if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
                 String listName = sym.linkedTo;
@@ -3304,9 +4911,6 @@ public class SemanticAnalyzer {
             }
         }
 
-        // ============================================================
-        // 🔥 عرض النتائج
-        // ============================================================
         if (errorCount == 0) {
             System.out.println("  ✓ لا توجد وصولات خارج حدود المصفوفة");
         } else {
@@ -3315,10 +4919,6 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-    /**
-     * حساب عدد العناصر في قائمة من النص
-     */
-
     private int countListElements(String content) {
         if (content == null || content.trim().isEmpty()) {
             return 0;
@@ -3326,7 +4926,6 @@ public class SemanticAnalyzer {
 
         String trimmed = content.trim();
 
-        // 🔥 حالة 1: قائمة تحتوي على قواميس { ... }
         if (trimmed.contains("{") && trimmed.contains("}")) {
             int count = 0;
             int braceDepth = 0;
@@ -3334,7 +4933,6 @@ public class SemanticAnalyzer {
             char stringChar = 0;
 
             for (char c : trimmed.toCharArray()) {
-                // تتبع النصوص لتجنب الخلط
                 if ((c == '"' || c == '\'') && (c == stringChar || stringChar == 0)) {
                     if (stringChar == 0) {
                         stringChar = c;
@@ -3357,9 +4955,7 @@ public class SemanticAnalyzer {
             return Math.max(count, 1);
         }
 
-        // 🔥 حالة 2: قائمة بسيطة مثل [1, 2, 3, 4, 5]
         if (trimmed.contains(",")) {
-            // نتعامل مع النصوص التي تحتوي على فواصل
             int count = 0;
             boolean inString = false;
             char stringChar = 0;
@@ -3369,7 +4965,6 @@ public class SemanticAnalyzer {
             StringBuilder current = new StringBuilder();
 
             for (char c : trimmed.toCharArray()) {
-                // تتبع النصوص
                 if ((c == '"' || c == '\'') && (c == stringChar || stringChar == 0)) {
                     if (stringChar == 0) {
                         stringChar = c;
@@ -3385,13 +4980,11 @@ public class SemanticAnalyzer {
                     continue;
                 }
 
-                // تتبع الأقواس
                 if (c == '[') bracketDepth++;
                 else if (c == ']') bracketDepth--;
                 else if (c == '(') parenDepth++;
                 else if (c == ')') parenDepth--;
 
-                // إذا وجدنا فاصلة خارج الأقواس والنصوص
                 if (c == ',' && bracketDepth == 0 && parenDepth == 0) {
                     if (!current.toString().trim().isEmpty()) {
                         count++;
@@ -3402,7 +4995,6 @@ public class SemanticAnalyzer {
                 }
             }
 
-            // آخر عنصر
             if (!current.toString().trim().isEmpty()) {
                 count++;
             }
@@ -3410,11 +5002,11 @@ public class SemanticAnalyzer {
             return Math.max(count, 1);
         }
 
-        // 🔥 حالة 3: عنصر واحد فقط
         return trimmed.isEmpty() ? 0 : 1;
     }
+
     // ═══════════════════════════════════════════════════════════════════════
-    //  الخطأ 28: Key Error - المعدل النهائي
+    //  الخطأ 28: Key Error
     // ═══════════════════════════════════════════════════════════════════════
 
     public void detectKeyError() {
@@ -3435,19 +5027,16 @@ public class SemanticAnalyzer {
                     String dictName = m.group(1);
                     String key = m.group(2);
 
-                    // تجاهل المفاتيح التي تُضاف في نفس السطر
                     if (line.contains(dictName + "[\"" + key + "\"] =") ||
                             line.contains(dictName + "[\"" + key + "\"]=")) {
                         continue;
                     }
 
-                    // 🔥🔥🔥 تجاهل request.form و request.files تماماً
                     if (dictName.equals("request.form") || dictName.equals("request.files") ||
                             dictName.equals("form") || dictName.equals("files")) {
                         continue;
                     }
 
-                    // تجاهل المفاتيح المعروفة في products
                     if (dictName.equals("p") || dictName.equals("product")) {
                         List<String> knownKeys = table.getListKeys("products");
                         if (knownKeys != null && knownKeys.contains(key)) {
@@ -3486,12 +5075,10 @@ public class SemanticAnalyzer {
     //  الخطأ 29: None Type Access
     // ═══════════════════════════════════════════════════════════════════════
 
-
     public void detectNoneTypeAccess() {
         System.out.println("  ▶ [الخطأ 29] التحقق من الوصول إلى قيمة None...");
         int errorCount = 0;
 
-        // قائمة المتغيرات المعروفة التي لها قيم حقيقية
         Set<String> knownNonNoneVars = new HashSet<>(Arrays.asList(
                 "app", "UPLOAD_FOLDER", "products", "request", "redirect",
                 "url_for", "render_template", "Flask", "secure_filename", "os"
@@ -3505,7 +5092,6 @@ public class SemanticAnalyzer {
                     if (var.type.equals("module") || var.type.equals("imported")) continue;
                     if (var.name.equals("True") || var.name.equals("False") || var.name.equals("None")) continue;
                     if (var.name.equals("__name__")) continue;
-                    // 🔥 تجاهل المتغيرات المعروفة
                     if (knownNonNoneVars.contains(var.name)) continue;
                     if (var.name.startsWith("os.") || var.name.startsWith("app.")) continue;
                     if (var.value == null) {
@@ -3526,10 +5112,6 @@ public class SemanticAnalyzer {
         }
         System.out.println();
     }
-
-
-
-
 
     // ═══════════════════════════════════════════════════════════════════════
     //  الخطأ 31: Value Error
@@ -3571,7 +5153,6 @@ public class SemanticAnalyzer {
     //  الخطأ 46: Unused Variable
     // ═══════════════════════════════════════════════════════════════════════
 
-
     public void detectUnusedVariable() {
         System.out.println("  ▶ [الخطأ 46] التحقق من المتغيرات غير المستخدمة...");
         int errorCount = 0;
@@ -3593,14 +5174,13 @@ public class SemanticAnalyzer {
             }
         }
 
-        // 🔥 قائمة المتغيرات التي يجب تجاهلها (ليست متغيرات حقيقية)
         Set<String> ignorePatterns = new HashSet<>(Arrays.asList(
-                "os.makedirs",      // استدعاء دالة
-                "app.config",       // تعيين في قاموس
-                "UPLOAD_FOLDER",    // متغير معروف
-                "app",              // كائن Flask
-                "products",         // قائمة المنتجات
-                "__name__",         // ثابت مدمج
+                "os.makedirs",
+                "app.config",
+                "UPLOAD_FOLDER",
+                "app",
+                "products",
+                "__name__",
                 "True", "False", "None"
         ));
 
@@ -3612,7 +5192,6 @@ public class SemanticAnalyzer {
             if (sym.name.equals("app") || sym.name.equals("UPLOAD_FOLDER")) continue;
             if (IGNORE_VARS.contains(sym.name)) continue;
 
-            // 🔥 تجاهل المتغيرات التي تحتوي على أنماط معينة
             boolean shouldIgnore = false;
             for (String pattern : ignorePatterns) {
                 if (sym.name.contains(pattern) || sym.name.startsWith("os.") || sym.name.startsWith("app.")) {
@@ -3623,9 +5202,8 @@ public class SemanticAnalyzer {
             if (shouldIgnore) continue;
 
             if (!usedVars.contains(sym.name) && !usedVars.contains(sym.name + "_loop")) {
-                // 🔥 التحقق الإضافي: إذا كان المتغير يحتوي على "." أو "[" فتجاهله
                 if (sym.name.contains(".") || sym.name.contains("[") || sym.name.contains("'")) {
-                    continue; // ليس متغيراً حقيقياً
+                    continue;
                 }
                 table.addWarning(String.format(
                         "[Unused Variable - السطر %d] المتغير '%s' تم تعريفه ولكن لم يتم استخدامه في أي مكان",
@@ -3643,11 +5221,9 @@ public class SemanticAnalyzer {
         System.out.println();
     }
 
-
     // ═══════════════════════════════════════════════════════════════════════
     //  الخطأ 47: Unused Import
     // ═══════════════════════════════════════════════════════════════════════
-
 
     public void detectUnusedImport() {
         System.out.println("  ▶ [الخطأ 47] التحقق من الاستيرادات غير المستخدمة...");
@@ -3657,10 +5233,8 @@ public class SemanticAnalyzer {
             Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
             Set<String> usedImports = new HashSet<>();
 
-            // جمع الاستخدامات الفعلية من النص الخام
             if (flaskRawCode != null) {
                 for (String line : flaskRawCode.split("\n")) {
-                    // البحث عن استخدامات الاستيرادات
                     if (line.contains("Flask(")) usedImports.add("Flask");
                     if (line.contains("render_template(")) usedImports.add("render_template");
                     if (line.contains("request.")) usedImports.add("request");
@@ -3671,7 +5245,6 @@ public class SemanticAnalyzer {
                 }
             }
 
-            // الاستيرادات المستخدمة في الجدول
             for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
                 if (sym.kind == SymbolTable.SymbolKind.ROUTE || sym.linkedTo != null) {
                     usedImports.add(sym.name);
@@ -3683,11 +5256,10 @@ public class SemanticAnalyzer {
                     VariableSymbol var = (VariableSymbol) symbol;
                     if ((var.type.equals("module") || var.type.equals("imported")) &&
                             !usedImports.contains(var.name) && !var.name.equals("os")) {
-                        // تجاهل بعض الاستيرادات المعروفة
                         if (var.name.equals("Flask") || var.name.equals("render_template") ||
                                 var.name.equals("request") || var.name.equals("redirect") ||
                                 var.name.equals("url_for") || var.name.equals("secure_filename")) {
-                            continue; // نعرف أنها مستخدمة
+                            continue;
                         }
                         table.addWarning(String.format(
                                 "[Unused Import - السطر %d] الاستيراد '%s' غير مستخدم في الكود",
@@ -3706,8 +5278,6 @@ public class SemanticAnalyzer {
         }
         System.out.println();
     }
-
-
 
     // ═══════════════════════════════════════════════════════════════════════
     //  الخطأ 48: Redeclared Function
@@ -3852,6 +5422,7 @@ public class SemanticAnalyzer {
 
         detectUndefinedErrors();           // 1
         detectSpellingErrors();            // 2
+        detectSpellingErrorsInPython();    // 50 🔥 الجديد
         detectScopeErrors();               // 3
         detectTypeMismatch();              // 4
         detectMissingFlaskVariables();     // 5
@@ -3861,6 +5432,7 @@ public class SemanticAnalyzer {
         detectMissingSecretKey();          // 10
         detectUndefinedTemplateVariable(); // 16
         detectUndefinedFilter();           // 17
+        detectUndefinedMacro();            // 18
         detectMissingEndTags();            // 19-20
         detectDivisionByZero();            // 26
         detectIndexOutOfRange();           // 27

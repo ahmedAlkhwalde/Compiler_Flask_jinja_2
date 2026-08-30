@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar">
 <head>
@@ -7,7 +8,8 @@
 <body style="font-family: sans-serif; background: #f0f0f0; direction: rtl; text-align: center;">
 <div class="container" style="width: 90%; margin: auto; padding-top: 40px;">
 
-{% if add_form %}
+
+    {% if add_form %}
     <div class="form-box" style="width: 320px; margin: auto; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #aaa; text-align: center;">
         <h2>إضافة منتج جديد</h2>
         <form method="POST" enctype="multipart/form-data">
@@ -23,9 +25,9 @@
         <a href="/" style="text-decoration: none; color: #333;">رجوع</a>
     </div>
 
-{% elif product %}
+    {% elif product %}
     <div style="width: 320px; margin: auto; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #aaa; text-align: center;">
-        <h2>{{ product.name }}</h2>
+        <h2>{{ product.name | upper}}</h2>
         <img src="{{ product.image_url }}" style="width: 100%; border-radius: 10px;"/>
         <p>السعر: {{ product.price }} $</p>
         <form action="/delete/{{ product.id }}" method="POST">
@@ -35,22 +37,39 @@
         <a href="/" style="text-decoration: none; color: #333;">رجوع</a>
     </div>
 
-{% else %}
+    {% else %}
+<!--    {% include 'products.html' %}-->
     <a href="/add"><button style="padding: 10px 20px; background-color: #00a1ff; color: white; border: none; border-radius: 8px; cursor: pointer;">إضافة منتج جديد</button></a>
     <br/><br/>
     {% for p in products %}
-        <div class="product-card" style="width: 220px; background-color: white; padding: 15px; border-radius: 10px; margin: 15px; display: inline-block; box-shadow: 0 0 7px #aaa;">
-            <img src="{{ p.image_url }}" style="width: 100%; border-radius: 10px;"/>
-            <h3>{{ p.name }}</h3>
-            <p>{{ p.price }} $</p>
-            <a href="/product/{{ p.id }}" style="text-decoration: none; color: #333;">عرض التفاصيل</a>
-            <form action="/delete/{{ p.id }}" method="POST">
-                <button class="delete-btn" style="background-color: red; margin-top: 7px; width: 100%; padding: 10px 20px; color: white; border: none; border-radius: 8px; cursor: pointer;">حذف</button>
-            </form>
-        </div>
+    <div class="product-card" style="width: 220px; background-color: white; padding: 15px; border-radius: 10px; margin: 15px; display: inline-block; box-shadow: 0 0 7px #aaa;">
+        <img src="{{ p.image_url }}" style="width: 100%; border-radius: 10px;"/>
+        <h3>{{ p.name |upper}}</h3>
+        <p>{{ p.price }} $</p>
+        <a href="/product/{{ p.id }}" style="text-decoration: none; color: #333;">عرض التفاصيل</a>
+        <form action="/delete/{{ p.id }}" method="POST">
+            <button class="delete-btn" style="background-color: red; margin-top: 7px; width: 100%; padding: 10px 20px; color: white; border: none; border-radius: 8px; cursor: pointer;">حذف</button>
+        </form>
+    </div>
     {% endfor %}
-{% endif %}
+    {% endif %}
 
 </div>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -23,7 +23,7 @@
                 </div>
             {% elif product %}
                 <div style="width: 320px; margin: auto; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #aaa; text-align: center;">
-                    <h2>{{ product.name }}</h2>
+                    <h2>{{ product.name | upper }}</h2>
                     <img src="{{ product.image_url }}" alt="image" style="width: 100%; border-radius: 10px;">
                     <p>السعر: {{ product.price }} $</p>
                     <form method="POST" action="/delete/{{ product.id }}">
@@ -45,7 +45,7 @@
                 {% for p in products %}
                     <div style="width: 220px; background-color: white; padding: 15px; border-radius: 10px; margin: 15px; display: inline-block; box-shadow: 0 0 7px #aaa;">
                         <img src="{{ p.image_url }}" alt="image" style="width: 100%; border-radius: 10px;">
-                        <h3>{{ p.name }}</h3>
+                        <h3>{{ p.name | upper }}</h3>
                         <p>{{ p.price }} $</p>
                         <a href="/product/{{ p.id }}" style="text-decoration: none; color: #333;">عرض التفاصيل</a>
                         <form method="POST" action="/delete/{{ p.id }}">

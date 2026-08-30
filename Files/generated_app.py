@@ -5,7 +5,8 @@ app = Flask(__name__)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-products = [{'id': 1, 'name': 'Laptop', 'price': 750, 'image': 'images.jfif'}, {'id': 2, 'name': 'Headphones', 'price': 120, 'image': 'headphones.jpg'}, {'id': 3, 'name': 'Camera', 'price': 500, 'image': 'camera.jpg'}]
+products = [{'id': 1, 'name': 'Laptop', 'price': 750, 'image': 'images.jfif'}, {'id': 2, 'name': 'Headphones', 'price': 120, 'image': 'images_1.jfif'}, {'id': 3, 'name': 'Camera', 'price': 500, 'image': 'images.jfif'}]
+x = int('2')
 @app.route('/')
 def show_products():
     for p in products:
