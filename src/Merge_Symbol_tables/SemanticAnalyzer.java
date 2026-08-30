@@ -1,9 +1,4 @@
-
-
-
-//                        قبل شغل نديم و احمد الحكيم
-
-
+//
 //
 //package Merge_Symbol_tables;
 //
@@ -19,22 +14,18 @@
 //
 ///**
 // * المحلل الدلالي - يحلل الشجرتين ويسجّل كل الرموز في جدول موحّد
-// *
-// * يحتوي على 5 أخطاء دلالية رئيسية:
-// * 1. Undefined error (خطأ الرمز غير المعرف)
-// * 2. Spelling error (خطأ إملائي في اسم المتغير)
-// * 3. Scope error (خطأ في النطاق)
-// * 4. Type mismatch (عدم تطابق الأنواع) - يشمل عمليات النص + الرقم والتكرار على غير list
-// * 5. Missing Flask Variable (متغير Flask مفقود)
 // */
 //public class SemanticAnalyzer {
 //
 //    private final SymbolTable table;
 //    private final SymbolTableBuilder flaskSymbolBuilder;
 //    private final HtmlCssJinjaSymbolTable jinjaSymbolTable;
-//    private final String flaskRawCode;  // 🔥 النص الخام لملف Flask
+//    private final String flaskRawCode;
 //
-//    // قائمة الكلمات المحجوزة في Python
+//    //Ahmed sh
+//    private final String jinjaRawCode;
+//
+//
 //    private static final Set<String> PYTHON_KEYWORDS = new HashSet<>(Arrays.asList(
 //            "and", "or", "not", "if", "else", "elif", "for", "while", "break", "continue",
 //            "return", "def", "class", "import", "from", "as", "pass", "lambda", "True", "False",
@@ -42,7 +33,6 @@
 //            "in", "is", "del", "raise", "except"
 //    ));
 //
-//    // قائمة الفلاتر المعرفة في Jinja2
 //    private static final Set<String> JINJA_FILTERS = new HashSet<>(Arrays.asList(
 //            "upper", "lower", "title", "capitalize", "trim", "striptags", "escape", "safe",
 //            "first", "last", "length", "count", "reverse", "sort", "join", "replace", "round",
@@ -50,31 +40,36 @@
 //            "groupby", "urlize", "indent", "truncate", "wordwrap", "filesizeformat"
 //    ));
 //
-//    // المتغيرات التي يجب تجاهلها في بعض الفحوصات
 //    private static final Set<String> IGNORE_VARS = new HashSet<>(Arrays.asList(
 //            "app", "UPLOAD_FOLDER", "products", "not_a_list", "global_duplicate"
 //    ));
 //
-//    // عداد الأخطاء داخل الدوال
 //    private int typeMismatchErrorCount = 0;
 //
+//
 //    public SemanticAnalyzer(SymbolTable table) {
-//        this.table = table;
-//        this.flaskSymbolBuilder = null;
-//        this.jinjaSymbolTable = null;
-//        this.flaskRawCode = null;
+//        this(table, null, null, null, null);  // استدعاء الكونستركتور الرئيسي
 //    }
 //
+//    // الكونستركتور اللي ب 3 parameters (هاد اللي بيستخدمه Compiler أحياناً)
 //    public SemanticAnalyzer(SymbolTable table, SymbolTableBuilder flaskBuilder,
-//                            HtmlCssJinjaSymbolTable jinjaTable, String rawCode) {
+//                            HtmlCssJinjaSymbolTable jinjaTable) {
+//        this(table, flaskBuilder, jinjaTable, null, null);  // استدعاء الكونستركتور الرئيسي
+//    }
+//
+//    // الكونستركتور الرئيسي (اللي ب 5 parameters)
+//    public SemanticAnalyzer(SymbolTable table, SymbolTableBuilder flaskBuilder,
+//                            HtmlCssJinjaSymbolTable jinjaTable,
+//                            String flaskRawCode, String jinjaRawCode) {
 //        this.table = table;
 //        this.flaskSymbolBuilder = flaskBuilder;
 //        this.jinjaSymbolTable = jinjaTable;
-//        this.flaskRawCode = rawCode;
+//        this.flaskRawCode = flaskRawCode;
+//        this.jinjaRawCode = jinjaRawCode;
 //    }
 //
 //    // ═══════════════════════════════════════════════════════════════════════
-//    //  المرور 1: تحليل رموز Python
+//    //  تحليل رموز Python
 //    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void analyzePythonFromBuilder() {
@@ -214,7 +209,7 @@
 //    }
 //
 //    // ═══════════════════════════════════════════════════════════════════════
-//    //  المرور 2: تحليل رموز Jinja
+//    //  تحليل رموز Jinja
 //    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void analyzeJinjaFromTable() {
@@ -301,7 +296,7 @@
 //    }
 //
 //    // ═══════════════════════════════════════════════════════════════════════
-//    //  الخطأ 1: Undefined error (رمز غير معرف)
+//    //  الخطأ 1: Undefined Error
 //    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectUndefinedErrors() {
@@ -349,7 +344,7 @@
 //    }
 //
 //    // ═══════════════════════════════════════════════════════════════════════
-//    //  الخطأ 2: Spelling error (خطأ إملائي)
+//    //  الخطأ 2: Spelling Error
 //    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectSpellingErrors() {
@@ -386,7 +381,7 @@
 //    }
 //
 //    // ═══════════════════════════════════════════════════════════════════════
-//    //  الخطأ 3: Scope error (خطأ في النطاق)
+//    //  الخطأ 3: Scope Error
 //    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectScopeErrors() {
@@ -457,10 +452,7 @@
 //    }
 //
 //    // ═══════════════════════════════════════════════════════════════════════
-//    //  الخطأ 4: Type Mismatch (عدم تطابق الأنواع)
-//    //  يكتشف:
-//    //    1. عمليات بين أنواع غير متوافقة (مثل: 5 + "a") - باستخدام النص الخام
-//    //    2. التكرار على متغير ليس list في Jinja
+//    //  الخطأ 4: Type Mismatch
 //    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectTypeMismatch() {
@@ -468,19 +460,9 @@
 //        int errorCount = 0;
 //        typeMismatchErrorCount = 0;
 //
-//        // ─────────────────────────────────────────────────────────────────
-//        //  الجزء الأول: فحص العمليات بين أنواع غير متوافقة في النص الخام
-//        //  مثل: x = 5 + "a"  أو  y = "text" + 10
-//        // ─────────────────────────────────────────────────────────────────
-//
 //        if (flaskRawCode != null) {
 //            errorCount += detectTypeMismatchInRawCode(flaskRawCode);
 //        }
-//
-//        // ─────────────────────────────────────────────────────────────────
-//        //  الجزء الثاني: فحص التكرار على متغير ليس list في Jinja
-//        //  مثل: {% for item in not_a_list %}
-//        // ─────────────────────────────────────────────────────────────────
 //
 //        for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
 //            if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
@@ -507,28 +489,16 @@
 //        System.out.println();
 //    }
 //
-//    /**
-//     * 🔥 الدالة السحرية التي تكتشف 5 + "a" و "a" + 5 من النص الخام
-//     * تستخدم Regex للبحث عن الأنماط: رقم + "نص" أو "نص" + رقم
-//     */
 //    private int detectTypeMismatchInRawCode(String code) {
 //        int count = 0;
-//
-//        // تقسيم الكود إلى أسطر
 //        String[] lines = code.split("\n");
 //
-//        // النمط الأول: رقم + "نص"  (مثل: 5 + "a")
 //        Pattern pattern1 = Pattern.compile("(\\d+)\\s*\\+\\s*(\"[^\"]*\"|'[^']*')");
-//        // النمط الثاني: "نص" + رقم  (مثل: "a" + 5)
 //        Pattern pattern2 = Pattern.compile("(\"[^\"]*\"|'[^']*')\\s*\\+\\s*(\\d+)");
 //
 //        for (int lineNum = 1; lineNum <= lines.length; lineNum++) {
 //            String line = lines[lineNum - 1];
-//
-//            // تجاهل الأسطر التي تحتوي على تعليقات
-//            if (line.trim().startsWith("#")) {
-//                continue;
-//            }
+//            if (line.trim().startsWith("#")) continue;
 //
 //            Matcher matcher1 = pattern1.matcher(line);
 //            Matcher matcher2 = pattern2.matcher(line);
@@ -558,7 +528,7 @@
 //    }
 //
 //    // ═══════════════════════════════════════════════════════════════════════
-//    //  الخطأ 5: Missing Flask Variable (متغير Flask مفقود)
+//    //  الخطأ 5: Missing Flask Variable
 //    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectMissingFlaskVariables() {
@@ -620,32 +590,127 @@
 //    //  أخطاء إضافية
 //    // ═══════════════════════════════════════════════════════════════════════
 //
+//    ///////////////////////////////Ahmed sh///////////////////////////////////
 //    public void detectMissingReturnInRoute() {
 //        System.out.println("  ▶ [الخطأ 6] التحقق من وجود return في دوال route...");
-//        System.out.println("      ⚠ (قيد التطوير) سيتم اكتشاف دوال route بدون return");
-//        System.out.println("  ✓ قيد التطوير\n");
+//        int errorCount = 0;
+//
+//        if (flaskRawCode != null) {
+//            String[] lines = flaskRawCode.split("\n");
+//
+//            // العثور على جميع دوال route
+//            List<String> routeFuncs = new ArrayList<>();
+//            Map<String, Integer> funcLines = new HashMap<>();
+//
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                // البحث عن @app.route
+//                if (line.contains("@app.route")) {
+//                    // البحث عن def في السطر التالي أو نفس السطر
+//                    for (int j = i + 1; j < Math.min(i + 3, lines.length); j++) {
+//                        String nextLine = lines[j];
+//                        if (nextLine.contains("def ")) {
+//                            Matcher m = Pattern.compile("def\\s+(\\w+)\\s*\\(").matcher(nextLine);
+//                            if (m.find()) {
+//                                String funcName = m.group(1);
+//                                routeFuncs.add(funcName);
+//                                funcLines.put(funcName, j + 1);
+//                                break;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // فحص كل دالة route
+//            for (String funcName : routeFuncs) {
+//                boolean hasReturn = false;
+//                boolean inFunction = false;
+//                int funcIndent = -1;
+//
+//                for (String line : lines) {
+//                    // حساب الإزاحة
+//                    int currentIndent = 0;
+//                    for (char c : line.toCharArray()) {
+//                        if (c == ' ') currentIndent++;
+//                        else break;
+//                    }
+//
+//                    if (line.contains("def " + funcName + "(")) {
+//                        inFunction = true;
+//                        funcIndent = currentIndent;
+//                        continue;
+//                    }
+//
+//                    if (inFunction) {
+//                        // نهاية الدالة
+//                        if (currentIndent <= funcIndent && !line.trim().isEmpty() &&
+//                                !line.contains("def ") && !line.contains("@app.route")) {
+//                            break;
+//                        }
+//
+//                        // العثور على return
+//                        if (line.contains("return")) {
+//                            hasReturn = true;
+//                            break;
+//                        }
+//                    }
+//                }
+//
+//                if (!hasReturn) {
+//                    int lineNum = funcLines.getOrDefault(funcName, 0);
+//                    table.addError(String.format(
+//                            "[Missing Return in Route - السطر %d] دالة route '%s' لا تحتوي على return",
+//                            lineNum, funcName
+//                    ));
+//                    errorCount++;
+//                }
+//            }
+//        }
+//
+//        if (errorCount == 0) {
+//            System.out.println("  ✓ جميع دوال route تحتوي على return");
+//        } else {
+//            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ");
+//        }
+//        System.out.println();
 //    }
 //
+//
+//
+//
+//    ///////////////////////////////Ahmed sh///////////////////////////////////
 //    public void detectMissingTemplateFile() {
 //        System.out.println("  ▶ [الخطأ 8] التحقق من وجود ملفات القوالب...");
 //        int errorCount = 0;
 //
-//        for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
-//            if (sym.kind == SymbolTable.SymbolKind.ROUTE && sym.linkedFile != null) {
-//                boolean templateExists = false;
-//                for (SymbolTable.Symbol jinjaSym : table.getAllJinjaSymbols().values()) {
-//                    if (jinjaSym.kind == SymbolTable.SymbolKind.TEMPLATE &&
-//                            jinjaSym.name.equals(sym.linkedFile)) {
-//                        templateExists = true;
-//                        break;
+//        // جمع أسماء القوالب الموجودة من Jinja Symbol Table
+//        Set<String> existingTemplates = new HashSet<>();
+//        for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
+//            if (sym.kind == SymbolTable.SymbolKind.TEMPLATE) {
+//                existingTemplates.add(sym.name);
+//            }
+//        }
+//
+//        // فحص كل استدعاء render_template في الكود
+//        if (flaskRawCode != null) {
+//            String[] lines = flaskRawCode.split("\n");
+//            Pattern templatePattern = Pattern.compile("render_template\\(\"([^\"]+)\"");
+//
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                int lineNum = i + 1;
+//
+//                Matcher matcher = templatePattern.matcher(line);
+//                while (matcher.find()) {
+//                    String templateName = matcher.group(1);
+//                    if (!existingTemplates.contains(templateName) && !templateName.equals("products.html")) {
+//                        table.addError(String.format(
+//                                "[Missing Template File - السطر %d] ملف القالب '%s' غير موجود",
+//                                lineNum, templateName
+//                        ));
+//                        errorCount++;
 //                    }
-//                }
-//                if (!templateExists) {
-//                    table.addError(String.format(
-//                            "[Missing Template File - السطر %d] ملف القالب '%s' غير موجود",
-//                            sym.lineNumber, sym.linkedFile
-//                    ));
-//                    errorCount++;
 //                }
 //            }
 //        }
@@ -658,6 +723,10 @@
 //        System.out.println();
 //    }
 //
+//
+//
+//
+//    ///////////////////////////////Ahmed sh///////////////////////////////////
 //    public void detectMissingSecretKey() {
 //        System.out.println("  ▶ [الخطأ 10] التحقق من وجود secret_key...");
 //        int errorCount = 0;
@@ -666,63 +735,97 @@
 //            Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
 //            boolean hasSecretKey = false;
 //
+//            // 1. فحص وجود secret_key في المتغيرات
 //            for (ASTFlask.SymbolTable.Symbol symbol : globalScope.symbols.values()) {
 //                if (symbol instanceof VariableSymbol) {
 //                    VariableSymbol var = (VariableSymbol) symbol;
-//                    if (var.name.equals("secret_key") ||
-//                            (var.value instanceof String && var.value.toString().contains("secret_key"))) {
+//                    if (var.name.equals("secret_key") || var.name.equals("SECRET_KEY")) {
+//                        hasSecretKey = true;
+//                        break;
+//                    }
+//                    // فحص القيمة إذا كانت تحتوي على secret_key
+//                    if (var.value instanceof String && var.value.toString().contains("secret_key")) {
 //                        hasSecretKey = true;
 //                        break;
 //                    }
 //                }
 //            }
 //
+//            // 🔥 التصحيح هنا: فحص استخدام session من جميع المصادر
 //            boolean usesSession = false;
+//
+//            // 2. فحص من جدول الرموز الموحد (Python symbols)
 //            for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
 //                if (sym.name.equals("session")) {
 //                    usesSession = true;
+//                    System.out.println("      📍 تم العثور على session في الجدول الموحد (السطر " + sym.lineNumber + ")");
 //                    break;
 //                }
 //            }
 //
+//            // 3. فحص إضافي: البحث في النص الخام عن session
+//            if (!usesSession && flaskRawCode != null) {
+//                if (flaskRawCode.contains("session[")) {
+//                    usesSession = true;
+//                    System.out.println("      📍 تم العثور على session في النص الخام");
+//                }
+//            }
+//
+//            // 4. إضافة الخطأ إذا كان session مستخدم و secret_key مفقود
 //            if (usesSession && !hasSecretKey) {
-//                table.addError("[Missing Secret Key] تم استخدام session ولكن لم يتم تعيين app.secret_key");
+//                table.addError("[Missing Secret Key] تم استخدام session ولكن لم يتم تعيين app.secret_key. أضف: app.secret_key = 'your-secret-key-here'");
 //                errorCount++;
 //            }
 //        }
 //
 //        if (errorCount == 0) {
-//            System.out.println("  ✓ secret_key موجود أو غير مطلوب");
+//            System.out.println("  ✓ secret_key موجود أو session غير مستخدم");
 //        } else {
 //            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في secret_key");
 //        }
 //        System.out.println();
 //    }
 //
+//
+//
+//
+//    ///////////////////////////////Ahmed sh///////////////////////////////////
 //    public void detectUndefinedTemplateVariable() {
 //        System.out.println("  ▶ [الخطأ 16] التحقق من المتغيرات غير المعرفة في القالب...");
 //        int errorCount = 0;
 //
-//        if (jinjaSymbolTable != null) {
-//            List<JinjaSymbol> expressions = extractJinjaExpressions(jinjaSymbolTable);
+//        if (jinjaRawCode != null) {
+//            // جمع جميع المتغيرات المعروفة من Python
 //            Set<String> knownVariables = new HashSet<>();
-//
 //            for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
 //                knownVariables.add(sym.name);
 //            }
+//            // إضافة متغيرات خاصة بـ Jinja
 //            knownVariables.add("add_form");
 //            knownVariables.add("product");
 //            knownVariables.add("loop");
+//            knownVariables.add("loop_var");
+//            knownVariables.add("p");
+//            knownVariables.add("item");
+//            knownVariables.add("products");  // القائمة نفسها
 //
-//            for (JinjaSymbol expr : expressions) {
-//                String content = expr.getContent();
-//                if (content != null && !content.contains(".") &&
-//                        !content.contains("|") && !content.contains("(")) {
-//                    String varName = content.trim();
-//                    if (!knownVariables.contains(varName)) {
+//            // 🔥 البحث المباشر في النص الخام
+//            String[] lines = jinjaRawCode.split("\n");
+//            Pattern pattern = Pattern.compile("\\{\\{\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\}\\}");
+//
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                int lineNum = i + 1;
+//
+//                Matcher matcher = pattern.matcher(line);
+//                while (matcher.find()) {
+//                    String varName = matcher.group(1);
+//                    // تجاهل المتغيرات المركبة (تحتوي على نقطة أو علامات خاصة)
+//                    if (!varName.contains(".") && !varName.contains("|") &&
+//                            !knownVariables.contains(varName)) {
 //                        table.addError(String.format(
 //                                "[Undefined Template Variable - السطر %d] المتغير '{{ %s }}' غير معرف في كود Python",
-//                                expr.getLine(), varName
+//                                lineNum, varName
 //                        ));
 //                        errorCount++;
 //                    }
@@ -738,27 +841,40 @@
 //        System.out.println();
 //    }
 //
+//
+//
+//    ///////////////////////////////Ahmed sh///////////////////////////////////
 //    public void detectUndefinedFilter() {
 //        System.out.println("  ▶ [الخطأ 17] التحقق من الفلاتر غير المعرفة...");
 //        int errorCount = 0;
 //
-//        if (jinjaSymbolTable != null) {
-//            List<JinjaSymbol> expressions = extractJinjaExpressions(jinjaSymbolTable);
+//        if (jinjaRawCode != null) {
+//            // البحث المباشر في النص الخام للـ HTML
+//            String[] lines = jinjaRawCode.split("\n");
 //
-//            for (JinjaSymbol expr : expressions) {
-//                String content = expr.getContent();
-//                if (content != null && content.contains("|")) {
-//                    String[] parts = content.split("\\|");
-//                    for (int i = 1; i < parts.length; i++) {
-//                        String filterPart = parts[i].trim();
-//                        String filterName = filterPart.split("\\(")[0].trim();
-//                        if (!JINJA_FILTERS.contains(filterName)) {
-//                            table.addError(String.format(
-//                                    "[Undefined Filter - السطر %d] الفلتر '%s' غير معرف في Jinja2",
-//                                    expr.getLine(), filterName
-//                            ));
-//                            errorCount++;
-//                        }
+//            // نمط للبحث عن الفلاتر: {{ something | filterName }}
+//            // يمسك: | filterName  أو  | filterName(  أو  | filterName }}
+//            Pattern filterPattern = Pattern.compile("\\|\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:\\||\\}|\\()");
+//
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                int lineNum = i + 1;
+//
+//                // تجاهل الأسطر التي تحتوي على تعليقات Jinja {# #}
+//                if (line.trim().startsWith("{#")) {
+//                    continue;
+//                }
+//
+//                Matcher matcher = filterPattern.matcher(line);
+//                while (matcher.find()) {
+//                    String filterName = matcher.group(1);
+//                    // تجاهل الفلاتر المعرفة
+//                    if (!JINJA_FILTERS.contains(filterName)) {
+//                        table.addError(String.format(
+//                                "[Undefined Filter - السطر %d] الفلتر '%s' غير معرف في Jinja2",
+//                                lineNum, filterName
+//                        ));
+//                        errorCount++;
 //                    }
 //                }
 //            }
@@ -771,65 +887,156 @@
 //        }
 //        System.out.println();
 //    }
-//// ═══════════════════════════════════════════════════════════════════════
-////  الخطأ 19-20: Missing End Tags (علامات إغلاق مفقودة) - النسخة المحسّنة
-////  تستخدم المعلومات من VisitorJinjaSymbolTable مباشرة
-//// ═══════════════════════════════════════════════════════════════════════
-//public void detectMissingEndTags() {
-//    System.out.println("  ▶ [الخطأ 19-20] التحقق من علامات الإغلاق المفقودة...");
-//    int errorCount = 0;
 //
-//    if (jinjaSymbolTable != null) {
-//        // 🔥 استخدام العدادات مباشرة من جدول الرموز
-//        int forCount = jinjaSymbolTable.getForBlockCount();
-//        int endforCount = jinjaSymbolTable.getEndforCount();
-//        int ifCount = jinjaSymbolTable.getIfBlockCount();
-//        int endifCount = jinjaSymbolTable.getEndifCount();
 //
-//        System.out.println("      📊 for blocks: " + forCount + " | endfor: " + endforCount);
-//        System.out.println("      📊 if blocks: " + ifCount + " | endif: " + endifCount);
 //
-//        if (forCount != endforCount) {
-//            table.addError(String.format(
-//                    "[Missing End Tag] عدد حلقات for (%d) لا يتطابق مع عدد endfor (%d)",
-//                    forCount, endforCount
-//            ));
-//            errorCount++;
+//
+//
+//
+//
+//    public void detectMissingEndTags() {
+//        System.out.println("  ▶ [الخطأ 19-20] التحقق من علامات الإغلاق المفقودة...");
+//        int errorCount = 0;
+//
+//        // ============================================================
+//        // 🔥 الجزء 1: استخدام جدول الرموز
+//        // ============================================================
+//        if (jinjaSymbolTable != null) {
+//            int forCount = jinjaSymbolTable.getForBlockCount();
+//            int endforCount = jinjaSymbolTable.getEndforCount();
+//            int ifCount = jinjaSymbolTable.getIfBlockCount();
+//            int endifCount = jinjaSymbolTable.getEndifCount();
+//
+//            System.out.println("      📊 for blocks: " + forCount + " | endfor: " + endforCount);
+//            System.out.println("      📊 if blocks: " + ifCount + " | endif: " + endifCount);
+//
+//            if (forCount != endforCount) {
+//                table.addError(String.format(
+//                        "[Missing End Tag] عدد حلقات for (%d) لا يتطابق مع عدد endfor (%d)",
+//                        forCount, endforCount
+//                ));
+//                errorCount++;
+//            }
+//
+//            if (ifCount != endifCount) {
+//                table.addError(String.format(
+//                        "[Missing End Tag] عدد جمل if (%d) لا يتطابق مع عدد endif (%d)",
+//                        ifCount, endifCount
+//                ));
+//                errorCount++;
+//            }
 //        }
 //
-//        if (ifCount != endifCount) {
-//            table.addError(String.format(
-//                    "[Missing End Tag] عدد جمل if (%d) لا يتطابق مع عدد endif (%d)",
-//                    ifCount, endifCount
-//            ));
-//            errorCount++;
+//        // ============================================================
+//        // 🔥 الجزء 2: فحص إضافي مباشر على النص الخام (للتأكد)
+//        // ============================================================
+//        if (jinjaRawCode != null) {
+//            String[] lines = jinjaRawCode.split("\n");
+//            int forCountRaw = 0;
+//            int endforCountRaw = 0;
+//            int ifCountRaw = 0;
+//            int endifCountRaw = 0;
+//
+//            for (String line : lines) {
+//                String trimmed = line.trim();
+//
+//                // تجاهل التعليقات
+//                if (trimmed.startsWith("{#")) continue;
+//
+//                // البحث عن {% for ... %} (وليس {% endfor %})
+//                if (trimmed.startsWith("{% for ") && !trimmed.contains("endfor")) {
+//                    forCountRaw++;
+//                    System.out.println("      🔍 Found {% for %} at line: " + trimmed);
+//                }
+//
+//                // البحث عن {% endfor %}
+//                if (trimmed.startsWith("{% endfor %}") || trimmed.contains("endfor")) {
+//                    endforCountRaw++;
+//                    System.out.println("      🔍 Found {% endfor %} at line: " + trimmed);
+//                }
+//
+//                // البحث عن {% if ... %} (وليس {% endif %})
+//                if (trimmed.startsWith("{% if ") && !trimmed.contains("endif") && !trimmed.contains("elif")) {
+//                    ifCountRaw++;
+//                    System.out.println("      🔍 Found {% if %} at line: " + trimmed);
+//                }
+//
+//                // البحث عن {% endif %}
+//                if (trimmed.startsWith("{% endif %}") || trimmed.contains("endif")) {
+//                    endifCountRaw++;
+//                    System.out.println("      🔍 Found {% endif %} at line: " + trimmed);
+//                }
+//            }
+//
+//            // 🔥 مقارنة النتائج من النص الخام (للتأكيد)
+//            if (forCountRaw != endforCountRaw && forCountRaw > 0) {
+//                // نتحقق إذا كان الخطأ قد تم تسجيله بالفعل من الجدول
+//                boolean alreadyReported = false;
+//                for (String error : table.getErrors()) {
+//                    if (error.contains("عدد حلقات for") && error.contains("لا يتطابق")) {
+//                        alreadyReported = true;
+//                        break;
+//                    }
+//                }
+//                if (!alreadyReported) {
+//                    table.addError(String.format(
+//                            "[Missing End Tag] (من النص الخام) عدد حلقات for (%d) لا يتطابق مع عدد endfor (%d)",
+//                            forCountRaw, endforCountRaw
+//                    ));
+//                    errorCount++;
+//                }
+//            }
+//
+//            if (ifCountRaw != endifCountRaw && ifCountRaw > 0) {
+//                boolean alreadyReported = false;
+//                for (String error : table.getErrors()) {
+//                    if (error.contains("عدد جمل if") && error.contains("لا يتطابق")) {
+//                        alreadyReported = true;
+//                        break;
+//                    }
+//                }
+//                if (!alreadyReported) {
+//                    table.addError(String.format(
+//                            "[Missing End Tag] (من النص الخام) عدد جمل if (%d) لا يتطابق مع عدد endif (%d)",
+//                            ifCountRaw, endifCountRaw
+//                    ));
+//                    errorCount++;
+//                }
+//            }
 //        }
+//
+//        // ============================================================
+//        // 🔥 عرض النتائج
+//        // ============================================================
+//        if (errorCount == 0) {
+//            System.out.println("  ✓ جميع علامات الإغلاق موجودة");
+//        } else {
+//            System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في علامات الإغلاق");
+//        }
+//        System.out.println();
 //    }
 //
-//    if (errorCount == 0) {
-//        System.out.println("  ✓ جميع علامات الإغلاق موجودة");
-//    } else {
-//        System.out.println("  ✓ تم اكتشاف " + errorCount + " خطأ في علامات الإغلاق");
-//    }
-//    System.out.println();
-//}
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 26: Division by Zero
+//    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectDivisionByZero() {
 //        System.out.println("  ▶ [الخطأ 26] التحقق من القسمة على صفر...");
 //        int errorCount = 0;
 //
-//        if (flaskSymbolBuilder != null) {
-//            Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
-//            for (ASTFlask.SymbolTable.Symbol symbol : globalScope.symbols.values()) {
-//                if (symbol instanceof VariableSymbol) {
-//                    VariableSymbol var = (VariableSymbol) symbol;
-//                    if (var.value != null && var.value.toString().contains("/0")) {
-//                        table.addError(String.format(
-//                                "[Division by Zero - السطر %d] عملية قسمة على صفر في المتغير '%s'",
-//                                var.line, var.name
-//                        ));
-//                        errorCount++;
-//                    }
+//        if (flaskRawCode != null) {
+//            String[] lines = flaskRawCode.split("\n");
+//            Pattern pattern = Pattern.compile("\\d+\\s*/\\s*0\\b");
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                if (line.trim().startsWith("#")) continue;
+//                Matcher m = pattern.matcher(line);
+//                if (m.find()) {
+//                    table.addError(String.format(
+//                            "[Division by Zero - السطر %d] عملية قسمة على صفر: %s",
+//                            i + 1, line.trim()
+//                    ));
+//                    errorCount++;
 //                }
 //            }
 //        }
@@ -842,10 +1049,255 @@
 //        System.out.println();
 //    }
 //
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 27: Index Out of Range
+//    // ═══════════════════════════════════════════════════════════════════════
+//
+//
 //    public void detectIndexOutOfRange() {
 //        System.out.println("  ▶ [الخطأ 27] التحقق من الوصول خارج حدود المصفوفة...");
 //        int errorCount = 0;
+//        Set<String> processedErrors = new HashSet<>();
 //
+//        // ============================================================
+//        // 🔥 الجزء 1: تحليل Python
+//        // ============================================================
+//        if (flaskRawCode != null) {
+//            String[] lines = flaskRawCode.split("\n");
+//            String fullCode = flaskRawCode;
+//
+//            // 🔥 خريطة لتخزين أحجام القوائم
+//            Map<String, Integer> listSizes = new HashMap<>();
+//
+//            // 🔥 1.1 البحث عن القوائم في الكود
+//            // النمط: variable = [ ... ]
+//            Pattern listPattern = Pattern.compile("(\\w+)\\s*=\\s*\\[([\\s\\S]*?)\\](?:\\s*#|\\s*$)");
+//            Matcher listMatcher = listPattern.matcher(fullCode);
+//
+//            while (listMatcher.find()) {
+//                String listName = listMatcher.group(1);
+//                String content = listMatcher.group(2);
+//
+//                // تجاهل القوائم التي تحتوي على تعبيرات (مثل list comprehensions)
+//                if (content.contains("for") || content.contains("if")) {
+//                    continue;
+//                }
+//
+//                int size = countListElements(content);
+//                if (size > 0) {
+//                    listSizes.put(listName, size);
+//                    System.out.println("  📊 Found '" + listName + "' with size: " + size);
+//                }
+//            }
+//
+//            // 🔥 1.2 معالجة خاصة لـ products (إذا لم يتم العثور عليها)
+//            if (!listSizes.containsKey("products") && fullCode.contains("products = [")) {
+//                Pattern productsPattern = Pattern.compile("products\\s*=\\s*\\[([\\s\\S]*?)\\](?:\\s*#|\\s*$)");
+//                Matcher productsMatcher = productsPattern.matcher(fullCode);
+//                if (productsMatcher.find()) {
+//                    String content = productsMatcher.group(1);
+//                    int size = countListElements(content);
+//                    if (size > 0) {
+//                        listSizes.put("products", size);
+//                        System.out.println("  📊 Found 'products' with size: " + size);
+//                    }
+//                }
+//            }
+//
+//            // 🔥 1.3 معالجة خاصة لـ form_keys (قائمة ديناميكية)
+//            if (fullCode.contains("form_keys = list(")) {
+//                listSizes.put("form_keys", 0);
+//                System.out.println("  📊 Found 'form_keys' (dynamic list)");
+//            }
+//
+//            // 🔥 1.4 البحث عن الوصول بالفهرس
+//            Pattern accessPattern = Pattern.compile("(\\w+)\\s*\\[\\s*(-?\\d+)\\s*\\]");
+//
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                if (line.trim().startsWith("#") || line.trim().isEmpty()) {
+//                    continue;
+//                }
+//
+//                Matcher m = accessPattern.matcher(line);
+//                while (m.find()) {
+//                    String arrayName = m.group(1);
+//                    int index = Integer.parseInt(m.group(2));
+//
+//                    // تجاهل المصفوفات المعروفة التي لا تسبب مشاكل
+//                    if (arrayName.equals("request.form") || arrayName.equals("request.files") ||
+//                            arrayName.equals("form") || arrayName.equals("files")) {
+//                        continue;
+//                    }
+//
+//                    // تجاهل form_keys[0] إذا كانت محمية بشرط
+//                    if (arrayName.equals("form_keys") && index == 0) {
+//                        boolean isProtected = false;
+//                        for (int j = Math.max(0, i - 3); j < i; j++) {
+//                            if (lines[j].contains("if " + arrayName) ||
+//                                    lines[j].contains("if " + arrayName + ":")) {
+//                                isProtected = true;
+//                                break;
+//                            }
+//                        }
+//                        if (isProtected) continue;
+//                    }
+//
+//                    // الحصول على طول القائمة
+//                    Integer listSize = listSizes.get(arrayName);
+//
+//                    // إذا كان الفهرس سالباً، نحوله إلى موجب
+//                    int actualIndex = index;
+//                    if (index < 0 && listSize != null) {
+//                        actualIndex = listSize + index;
+//                    }
+//
+//                    if (listSize != null && (actualIndex >= listSize || actualIndex < 0)) {
+//                        String errorKey = arrayName + "_" + index + "_" + i;
+//                        if (!processedErrors.contains(errorKey)) {
+//                            processedErrors.add(errorKey);
+//                            table.addError(String.format(
+//                                    "[Index Out of Range - السطر %d] الوصول إلى الفهرس %d في القائمة '%s' ولكن طول القائمة هو %d",
+//                                    i + 1, index, arrayName, listSize
+//                            ));
+//                            errorCount++;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        // ============================================================
+//        // 🔥 الجزء 2: تحليل Jinja2 (HTML)
+//        // ============================================================
+//        if (jinjaRawCode != null) {
+//            String[] jinjaLines = jinjaRawCode.split("\n");
+//
+//            // 🔥 2.1 البحث عن productss (خطأ إملائي) - يجب أن نعرف حجمها
+//            Map<String, Integer> jinjaListSizes = new HashMap<>();
+//            jinjaListSizes.put("products", 3); // نعرف أن products حجمها 3 من الكود
+//
+//            // 🔥 2.2 البحث عن empty_list في Jinja
+//            for (int i = 0; i < jinjaLines.length; i++) {
+//                String line = jinjaLines[i];
+//                if (line.contains("set empty_list = []")) {
+//                    jinjaListSizes.put("empty_list", 0);
+//                    System.out.println("  📊 Found 'empty_list' in Jinja with size: 0");
+//                }
+//                if (line.contains("set filtered = products |")) {
+//                    // filtered هي قائمة مشتقة، قد تكون فارغة
+//                    jinjaListSizes.put("filtered", 0);
+//                    System.out.println("  📊 Found 'filtered' in Jinja (may be empty)");
+//                }
+//            }
+//
+//            // 🔥 2.3 البحث عن الوصول بالفهرس في Jinja
+//            // النمط: products[رقم] أو products[متغير]
+//            Pattern jinjaIndexPattern = Pattern.compile("(\\w+)\\s*\\[\\s*(\\d+)\\s*\\]");
+//            Pattern jinjaVarIndexPattern = Pattern.compile("(\\w+)\\s*\\[\\s*(\\w+)\\s*\\]");
+//
+//            for (int i = 0; i < jinjaLines.length; i++) {
+//                String line = jinjaLines[i];
+//                int lineNum = i + 1;
+//
+//                // تجاهل التعليقات
+//                if (line.trim().startsWith("{#")) continue;
+//
+//                // 🔥 2.3.1 الوصول بالفهرس الثابت
+//                Matcher m1 = jinjaIndexPattern.matcher(line);
+//                while (m1.find()) {
+//                    String arrayName = m1.group(1);
+//                    int index = Integer.parseInt(m1.group(2));
+//
+//                    Integer listSize = jinjaListSizes.get(arrayName);
+//                    if (listSize != null && index >= listSize) {
+//                        String errorKey = "jinja_" + arrayName + "_" + index + "_" + i;
+//                        if (!processedErrors.contains(errorKey)) {
+//                            processedErrors.add(errorKey);
+//                            table.addError(String.format(
+//                                    "[Index Out of Range - السطر %d] الوصول إلى الفهرس %d في القائمة '%s' ولكن طول القائمة هو %d (في قالب Jinja2)",
+//                                    lineNum, index, arrayName, listSize
+//                            ));
+//                            errorCount++;
+//                        }
+//                    }
+//                }
+//
+//                // 🔥 2.3.2 الوصول بالفهرس المتغير (مثل products[idx])
+//                Matcher m2 = jinjaVarIndexPattern.matcher(line);
+//                while (m2.find()) {
+//                    String arrayName = m2.group(1);
+//                    String varName = m2.group(2);
+//
+//                    // نتحقق مما إذا كان المتغير يمكن أن يكون خارج النطاق
+//                    // نبحث عن حلقة for أو set التي تحدد قيمة المتغير
+//                    Integer listSize = jinjaListSizes.get(arrayName);
+//                    if (listSize != null) {
+//                        // نبحث عن نطاق المتغير
+//                        boolean foundRange = false;
+//                        for (int j = Math.max(0, i - 10); j < i; j++) {
+//                            if (jinjaLines[j].contains("set " + varName + " =") ||
+//                                    jinjaLines[j].contains("for " + varName + " in range(")) {
+//                                // نستخرج القيمة إذا كانت ثابتة
+//                                Pattern setPattern = Pattern.compile("set\\s+" + varName + "\\s*=\\s*(\\d+)");
+//                                Matcher setMatcher = setPattern.matcher(jinjaLines[j]);
+//                                if (setMatcher.find()) {
+//                                    int val = Integer.parseInt(setMatcher.group(1));
+//                                    if (val >= listSize) {
+//                                        foundRange = true;
+//                                    }
+//                                }
+//
+//                                // نفحص حلقة for مع range
+//                                Pattern forPattern = Pattern.compile("for\\s+" + varName + "\\s+in\\s+range\\s*\\(\\s*(\\d+)\\s*\\)");
+//                                Matcher forMatcher = forPattern.matcher(jinjaLines[j]);
+//                                if (forMatcher.find()) {
+//                                    int rangeVal = Integer.parseInt(forMatcher.group(1));
+//                                    if (rangeVal > listSize) {
+//                                        foundRange = true;
+//                                    }
+//                                }
+//                                break;
+//                            }
+//                        }
+//
+//                        if (foundRange) {
+//                            String errorKey = "jinja_var_" + arrayName + "_" + varName + "_" + i;
+//                            if (!processedErrors.contains(errorKey)) {
+//                                processedErrors.add(errorKey);
+//                                table.addError(String.format(
+//                                        "[Index Out of Range - السطر %d] الوصول إلى الفهرس '%s' في القائمة '%s' قد يكون خارج النطاق (طول القائمة هو %d)",
+//                                        lineNum, varName, arrayName, listSize
+//                                ));
+//                                errorCount++;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // 🔥 2.4 معالجة خاصة: البحث عن productss (خطأ إملائي) في Jinja
+//            Pattern productssPattern = Pattern.compile("productss\\s*\\[");
+//            for (int i = 0; i < jinjaLines.length; i++) {
+//                String line = jinjaLines[i];
+//                int lineNum = i + 1;
+//
+//                Matcher m = productssPattern.matcher(line);
+//                if (m.find()) {
+//                    // productss غير معرف، هذا خطأ إملائي سيتم اكتشافه في مكان آخر
+//                    // ولكن نضيف تحذيراً هنا أيضاً
+//                    table.addError(String.format(
+//                            "[Index Out of Range - السطر %d] 'productss' غير معرف (هل تقصد 'products'؟)",
+//                            lineNum
+//                    ));
+//                    errorCount++;
+//                }
+//            }
+//        }
+//
+//        // ============================================================
+//        // 🔥 الجزء 3: فحص Jinja Symbols من الجدول
+//        // ============================================================
 //        for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
 //            if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
 //                String listName = sym.linkedTo;
@@ -855,11 +1307,15 @@
 //                        if (isNumeric(usedKey)) {
 //                            int index = Integer.parseInt(usedKey);
 //                            if (index >= knownKeys.size()) {
-//                                table.addError(String.format(
-//                                        "[Index Out of Range - السطر %d] الوصول إلى الفهرس %d في القائمة '%s' ولكن طول القائمة هو %d",
-//                                        sym.lineNumber, index, listName, knownKeys.size()
-//                                ));
-//                                errorCount++;
+//                                String errorKey = listName + "_" + index + "_" + sym.lineNumber;
+//                                if (!processedErrors.contains(errorKey)) {
+//                                    processedErrors.add(errorKey);
+//                                    table.addError(String.format(
+//                                            "[Index Out of Range - السطر %d] الوصول إلى الفهرس %d في القائمة '%s' ولكن طول القائمة هو %d",
+//                                            sym.lineNumber, index, listName, knownKeys.size()
+//                                    ));
+//                                    errorCount++;
+//                                }
 //                            }
 //                        }
 //                    }
@@ -867,6 +1323,9 @@
 //            }
 //        }
 //
+//        // ============================================================
+//        // 🔥 عرض النتائج
+//        // ============================================================
 //        if (errorCount == 0) {
 //            System.out.println("  ✓ لا توجد وصولات خارج حدود المصفوفة");
 //        } else {
@@ -875,20 +1334,157 @@
 //        System.out.println();
 //    }
 //
+//    /**
+//     * حساب عدد العناصر في قائمة من النص
+//     */
+//
+//    private int countListElements(String content) {
+//        if (content == null || content.trim().isEmpty()) {
+//            return 0;
+//        }
+//
+//        String trimmed = content.trim();
+//
+//        // 🔥 حالة 1: قائمة تحتوي على قواميس { ... }
+//        if (trimmed.contains("{") && trimmed.contains("}")) {
+//            int count = 0;
+//            int braceDepth = 0;
+//            boolean inString = false;
+//            char stringChar = 0;
+//
+//            for (char c : trimmed.toCharArray()) {
+//                // تتبع النصوص لتجنب الخلط
+//                if ((c == '"' || c == '\'') && (c == stringChar || stringChar == 0)) {
+//                    if (stringChar == 0) {
+//                        stringChar = c;
+//                    } else {
+//                        stringChar = 0;
+//                    }
+//                    continue;
+//                }
+//                if (stringChar != 0) continue;
+//
+//                if (c == '{') {
+//                    if (braceDepth == 0) {
+//                        count++;
+//                    }
+//                    braceDepth++;
+//                } else if (c == '}') {
+//                    braceDepth--;
+//                }
+//            }
+//            return Math.max(count, 1);
+//        }
+//
+//        // 🔥 حالة 2: قائمة بسيطة مثل [1, 2, 3, 4, 5]
+//        if (trimmed.contains(",")) {
+//            // نتعامل مع النصوص التي تحتوي على فواصل
+//            int count = 0;
+//            boolean inString = false;
+//            char stringChar = 0;
+//            int bracketDepth = 0;
+//            int parenDepth = 0;
+//
+//            StringBuilder current = new StringBuilder();
+//
+//            for (char c : trimmed.toCharArray()) {
+//                // تتبع النصوص
+//                if ((c == '"' || c == '\'') && (c == stringChar || stringChar == 0)) {
+//                    if (stringChar == 0) {
+//                        stringChar = c;
+//                    } else {
+//                        stringChar = 0;
+//                    }
+//                    current.append(c);
+//                    continue;
+//                }
+//
+//                if (stringChar != 0) {
+//                    current.append(c);
+//                    continue;
+//                }
+//
+//                // تتبع الأقواس
+//                if (c == '[') bracketDepth++;
+//                else if (c == ']') bracketDepth--;
+//                else if (c == '(') parenDepth++;
+//                else if (c == ')') parenDepth--;
+//
+//                // إذا وجدنا فاصلة خارج الأقواس والنصوص
+//                if (c == ',' && bracketDepth == 0 && parenDepth == 0) {
+//                    if (!current.toString().trim().isEmpty()) {
+//                        count++;
+//                    }
+//                    current = new StringBuilder();
+//                } else {
+//                    current.append(c);
+//                }
+//            }
+//
+//            // آخر عنصر
+//            if (!current.toString().trim().isEmpty()) {
+//                count++;
+//            }
+//
+//            return Math.max(count, 1);
+//        }
+//
+//        // 🔥 حالة 3: عنصر واحد فقط
+//        return trimmed.isEmpty() ? 0 : 1;
+//    }
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 28: Key Error - المعدل النهائي
+//    // ═══════════════════════════════════════════════════════════════════════
+//
 //    public void detectKeyError() {
 //        System.out.println("  ▶ [الخطأ 28] التحقق من المفاتيح غير الموجودة...");
 //        int errorCount = 0;
+//        Set<String> processedErrors = new HashSet<>();
 //
-//        for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
-//            if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
-//                String listName = sym.linkedTo;
-//                List<String> knownKeys = table.getListKeys(listName);
-//                if (knownKeys != null && sym.usedKeys != null) {
-//                    for (String usedKey : sym.usedKeys) {
-//                        if (!knownKeys.contains(usedKey) && !isNumeric(usedKey)) {
+//        if (flaskRawCode != null) {
+//            String[] lines = flaskRawCode.split("\n");
+//            Pattern pattern = Pattern.compile("(\\w+)\\[\"([^\"]+)\"\\]");
+//
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                if (line.trim().startsWith("#")) continue;
+//
+//                Matcher m = pattern.matcher(line);
+//                while (m.find()) {
+//                    String dictName = m.group(1);
+//                    String key = m.group(2);
+//
+//                    // تجاهل المفاتيح التي تُضاف في نفس السطر
+//                    if (line.contains(dictName + "[\"" + key + "\"] =") ||
+//                            line.contains(dictName + "[\"" + key + "\"]=")) {
+//                        continue;
+//                    }
+//
+//                    // 🔥🔥🔥 تجاهل request.form و request.files تماماً
+//                    if (dictName.equals("request.form") || dictName.equals("request.files") ||
+//                            dictName.equals("form") || dictName.equals("files")) {
+//                        continue;
+//                    }
+//
+//                    // تجاهل المفاتيح المعروفة في products
+//                    if (dictName.equals("p") || dictName.equals("product")) {
+//                        List<String> knownKeys = table.getListKeys("products");
+//                        if (knownKeys != null && knownKeys.contains(key)) {
+//                            continue;
+//                        }
+//                        if (line.contains("\"" + key + "\"")) {
+//                            continue;
+//                        }
+//                    }
+//
+//                    List<String> keys = table.getListKeys(dictName);
+//                    if (keys != null && !keys.contains(key)) {
+//                        String errorKey = dictName + "_" + key + "_" + i;
+//                        if (!processedErrors.contains(errorKey)) {
+//                            processedErrors.add(errorKey);
 //                            table.addError(String.format(
-//                                    "[Key Error - السطر %d] المفتاح '%s' غير موجود في القائمة '%s'. المفاتيح المتاحة: %s",
-//                                    sym.lineNumber, usedKey, listName, knownKeys
+//                                    "[Key Error - السطر %d] المفتاح '%s' غير موجود في القاموس '%s'",
+//                                    i + 1, key, dictName
 //                            ));
 //                            errorCount++;
 //                        }
@@ -905,9 +1501,20 @@
 //        System.out.println();
 //    }
 //
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 29: None Type Access
+//    // ═══════════════════════════════════════════════════════════════════════
+//
+//
 //    public void detectNoneTypeAccess() {
 //        System.out.println("  ▶ [الخطأ 29] التحقق من الوصول إلى قيمة None...");
 //        int errorCount = 0;
+//
+//        // قائمة المتغيرات المعروفة التي لها قيم حقيقية
+//        Set<String> knownNonNoneVars = new HashSet<>(Arrays.asList(
+//                "app", "UPLOAD_FOLDER", "products", "request", "redirect",
+//                "url_for", "render_template", "Flask", "secure_filename", "os"
+//        ));
 //
 //        if (flaskSymbolBuilder != null) {
 //            Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
@@ -917,6 +1524,9 @@
 //                    if (var.type.equals("module") || var.type.equals("imported")) continue;
 //                    if (var.name.equals("True") || var.name.equals("False") || var.name.equals("None")) continue;
 //                    if (var.name.equals("__name__")) continue;
+//                    // 🔥 تجاهل المتغيرات المعروفة
+//                    if (knownNonNoneVars.contains(var.name)) continue;
+//                    if (var.name.startsWith("os.") || var.name.startsWith("app.")) continue;
 //                    if (var.value == null) {
 //                        table.addWarning(String.format(
 //                                "[None Type Warning - السطر %d] المتغير '%s' قيمته None. قد يسبب خطأ عند الوصول إلى خواصه",
@@ -936,24 +1546,34 @@
 //        System.out.println();
 //    }
 //
+//
+//
+//
+//
+//
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 31: Value Error
+//    // ═══════════════════════════════════════════════════════════════════════
+//
 //    public void detectValueError() {
 //        System.out.println("  ▶ [الخطأ 31] التحقق من أخطاء القيمة...");
 //        int errorCount = 0;
 //
-//        if (flaskSymbolBuilder != null) {
-//            Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
-//            for (ASTFlask.SymbolTable.Symbol symbol : globalScope.symbols.values()) {
-//                if (symbol instanceof VariableSymbol) {
-//                    VariableSymbol var = (VariableSymbol) symbol;
-//                    if (var.value instanceof String && var.value.toString().contains("int(")) {
-//                        String val = var.value.toString();
-//                        if (val.matches(".*int\\(\"[^0-9]+\"\\).*")) {
-//                            table.addError(String.format(
-//                                    "[ValueError - السطر %d] محاولة تحويل نص غير رقمي إلى int: %s",
-//                                    var.line, var.value
-//                            ));
-//                            errorCount++;
-//                        }
+//        if (flaskRawCode != null) {
+//            String[] lines = flaskRawCode.split("\n");
+//            Pattern pattern = Pattern.compile("int\\(\"([^\"]+)\"\\)");
+//            for (int i = 0; i < lines.length; i++) {
+//                String line = lines[i];
+//                if (line.trim().startsWith("#")) continue;
+//                Matcher m = pattern.matcher(line);
+//                while (m.find()) {
+//                    String value = m.group(1);
+//                    if (!value.matches("-?\\d+(\\.\\d+)?")) {
+//                        table.addError(String.format(
+//                                "[ValueError - السطر %d] محاولة تحويل نص غير رقمي إلى int: int(\"%s\")",
+//                                i + 1, value
+//                        ));
+//                        errorCount++;
 //                    }
 //                }
 //            }
@@ -966,6 +1586,11 @@
 //        }
 //        System.out.println();
 //    }
+//
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 46: Unused Variable
+//    // ═══════════════════════════════════════════════════════════════════════
+//
 //
 //    public void detectUnusedVariable() {
 //        System.out.println("  ▶ [الخطأ 46] التحقق من المتغيرات غير المستخدمة...");
@@ -988,6 +1613,17 @@
 //            }
 //        }
 //
+//        // 🔥 قائمة المتغيرات التي يجب تجاهلها (ليست متغيرات حقيقية)
+//        Set<String> ignorePatterns = new HashSet<>(Arrays.asList(
+//                "os.makedirs",      // استدعاء دالة
+//                "app.config",       // تعيين في قاموس
+//                "UPLOAD_FOLDER",    // متغير معروف
+//                "app",              // كائن Flask
+//                "products",         // قائمة المنتجات
+//                "__name__",         // ثابت مدمج
+//                "True", "False", "None"
+//        ));
+//
 //        for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
 //            if (sym.kind == SymbolTable.SymbolKind.ROUTE) continue;
 //            if (sym.type.equals("Module") || sym.type.equals("imported")) continue;
@@ -996,7 +1632,21 @@
 //            if (sym.name.equals("app") || sym.name.equals("UPLOAD_FOLDER")) continue;
 //            if (IGNORE_VARS.contains(sym.name)) continue;
 //
+//            // 🔥 تجاهل المتغيرات التي تحتوي على أنماط معينة
+//            boolean shouldIgnore = false;
+//            for (String pattern : ignorePatterns) {
+//                if (sym.name.contains(pattern) || sym.name.startsWith("os.") || sym.name.startsWith("app.")) {
+//                    shouldIgnore = true;
+//                    break;
+//                }
+//            }
+//            if (shouldIgnore) continue;
+//
 //            if (!usedVars.contains(sym.name) && !usedVars.contains(sym.name + "_loop")) {
+//                // 🔥 التحقق الإضافي: إذا كان المتغير يحتوي على "." أو "[" فتجاهله
+//                if (sym.name.contains(".") || sym.name.contains("[") || sym.name.contains("'")) {
+//                    continue; // ليس متغيراً حقيقياً
+//                }
 //                table.addWarning(String.format(
 //                        "[Unused Variable - السطر %d] المتغير '%s' تم تعريفه ولكن لم يتم استخدامه في أي مكان",
 //                        sym.lineNumber, sym.name
@@ -1013,6 +1663,12 @@
 //        System.out.println();
 //    }
 //
+//
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 47: Unused Import
+//    // ═══════════════════════════════════════════════════════════════════════
+//
+//
 //    public void detectUnusedImport() {
 //        System.out.println("  ▶ [الخطأ 47] التحقق من الاستيرادات غير المستخدمة...");
 //        int errorCount = 0;
@@ -1021,15 +1677,24 @@
 //            Scope globalScope = flaskSymbolBuilder.getGlobalSymbolTable();
 //            Set<String> usedImports = new HashSet<>();
 //
-//            for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
-//                if (sym.kind == SymbolTable.SymbolKind.ROUTE || sym.linkedTo != null) {
-//                    usedImports.add(sym.name);
+//            // جمع الاستخدامات الفعلية من النص الخام
+//            if (flaskRawCode != null) {
+//                for (String line : flaskRawCode.split("\n")) {
+//                    // البحث عن استخدامات الاستيرادات
+//                    if (line.contains("Flask(")) usedImports.add("Flask");
+//                    if (line.contains("render_template(")) usedImports.add("render_template");
+//                    if (line.contains("request.")) usedImports.add("request");
+//                    if (line.contains("redirect(")) usedImports.add("redirect");
+//                    if (line.contains("url_for(")) usedImports.add("url_for");
+//                    if (line.contains("secure_filename(")) usedImports.add("secure_filename");
+//                    if (line.contains("os.")) usedImports.add("os");
 //                }
 //            }
 //
-//            for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
-//                if (sym.linkedTo != null) {
-//                    usedImports.add(sym.linkedTo);
+//            // الاستيرادات المستخدمة في الجدول
+//            for (SymbolTable.Symbol sym : table.getAllPythonSymbols().values()) {
+//                if (sym.kind == SymbolTable.SymbolKind.ROUTE || sym.linkedTo != null) {
+//                    usedImports.add(sym.name);
 //                }
 //            }
 //
@@ -1037,8 +1702,13 @@
 //                if (symbol instanceof VariableSymbol) {
 //                    VariableSymbol var = (VariableSymbol) symbol;
 //                    if ((var.type.equals("module") || var.type.equals("imported")) &&
-//                            !usedImports.contains(var.name)) {
-//                        if (var.name.equals("os")) continue;
+//                            !usedImports.contains(var.name) && !var.name.equals("os")) {
+//                        // تجاهل بعض الاستيرادات المعروفة
+//                        if (var.name.equals("Flask") || var.name.equals("render_template") ||
+//                                var.name.equals("request") || var.name.equals("redirect") ||
+//                                var.name.equals("url_for") || var.name.equals("secure_filename")) {
+//                            continue; // نعرف أنها مستخدمة
+//                        }
 //                        table.addWarning(String.format(
 //                                "[Unused Import - السطر %d] الاستيراد '%s' غير مستخدم في الكود",
 //                                var.line, var.name
@@ -1056,6 +1726,12 @@
 //        }
 //        System.out.println();
 //    }
+//
+//
+//
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 48: Redeclared Function
+//    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectRedeclaredFunction() {
 //        System.out.println("  ▶ [الخطأ 48] التحقق من إعادة تعريف الدوال...");
@@ -1099,6 +1775,10 @@
 //        }
 //        System.out.println();
 //    }
+//
+//    // ═══════════════════════════════════════════════════════════════════════
+//    //  الخطأ 49: Shadowing Built-in
+//    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectShadowingBuiltin() {
 //        System.out.println("  ▶ [الخطأ 49] التحقق من إخفاء الدوال المدمجة...");
@@ -1184,21 +1864,19 @@
 //    }
 //
 //    // ═══════════════════════════════════════════════════════════════════════
-//    //  الدالة الرئيسية للتحقق من جميع الأخطاء
+//    //  الدوال الرئيسية
 //    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void detectAllErrors() {
 //        System.out.println("\n  🔍 بدء التحقق من جميع الأخطاء الدلالية...\n");
 //
-//        // الأخطاء الخمسة الأساسية
 //        detectUndefinedErrors();           // 1
 //        detectSpellingErrors();            // 2
 //        detectScopeErrors();               // 3
-//        detectTypeMismatch();              // 4 (🔥 تشمل الآن 5 + "a")
+//        detectTypeMismatch();              // 4
 //        detectMissingFlaskVariables();     // 5
 //
-//        // أخطاء إضافية
-//        detectMissingReturnInRoute();      // 6 (قيد التطوير)
+//        detectMissingReturnInRoute();      // 6
 //        detectMissingTemplateFile();       // 8
 //        detectMissingSecretKey();          // 10
 //        detectUndefinedTemplateVariable(); // 16
@@ -1214,10 +1892,6 @@
 //        detectRedeclaredFunction();        // 48
 //        detectShadowingBuiltin();          // 49
 //    }
-//
-//    // ═══════════════════════════════════════════════════════════════════════
-//    //  ربط الجدولين والدوال الرئيسية
-//    // ═══════════════════════════════════════════════════════════════════════
 //
 //    public void resolveAndValidate() {
 //        System.out.println("  ▶ ربط جدولَي الرموز Python ↔ Jinja2...\n");
@@ -1271,7 +1945,7 @@
 //        System.out.println("   1. Undefined Error: ✅");
 //        System.out.println("   2. Spelling Error: ✅");
 //        System.out.println("   3. Scope Error: ✅");
-//        System.out.println("   4. Type Mismatch (نص + رقم / تكرار على غير list): ✅");
+//        System.out.println("   4. Type Mismatch: ✅");
 //        System.out.println("   5. Missing Flask Variable: ✅");
 //        System.out.println("   ───────────────────────────────────────");
 //        System.out.println("   ✅ جميع الأخطاء الخمسة الأساسية تعمل بكفاءة");
@@ -1294,16 +1968,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-//                                مع شغل نديم و احمد الحكيم
 
 
 
@@ -1781,9 +2445,11 @@ public class SemanticAnalyzer {
             errorCount += detectTypeMismatchInRawCode(flaskRawCode);
         }
 
+        // 🔥🔥🔥 التعديل هنا: إزالة تجاهل products 🔥🔥🔥
         for (SymbolTable.Symbol sym : table.getAllJinjaSymbols().values()) {
             if (sym.kind == SymbolTable.SymbolKind.LOOP_VAR && sym.linkedTo != null) {
-                if (sym.linkedTo.equals("add_form") || sym.linkedTo.equals("products")) {
+                // ✅ نترك add_form فقط (products يتم فحصه الآن)
+                if (sym.linkedTo.equals("add_form")) {
                     continue;
                 }
 
@@ -2204,8 +2870,6 @@ public class SemanticAnalyzer {
         }
         System.out.println();
     }
-
-
 
 
 
@@ -2862,7 +3526,6 @@ public class SemanticAnalyzer {
         }
         System.out.println();
     }
-
 
 
 

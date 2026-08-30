@@ -1,4 +1,5 @@
 //
+//
 //package Merge_Symbol_tables;
 //
 //import ASTFlask.ASTPrinter;
@@ -172,6 +173,9 @@
 //
 //        boolean hasErrors = unifiedTable.hasErrors();
 //
+//        // ============================================================
+//        // 🔥 التعديل الوحيد هنا 🔥
+//        // ============================================================
 //        if (hasErrors) {
 //            System.out.println("\n⚠️  الأخطاء الدلالية المكتشفة (" + unifiedTable.getErrors().size() + "):");
 //            for (String error : unifiedTable.getErrors()) {
@@ -179,6 +183,10 @@
 //            }
 //            System.out.println("\n🛑 **تم اكتشاف أخطاء دلالية، لن يتم توليد الكود!** 🛑");
 //            System.out.println("   يرجى تصحيح الأخطاء المذكورة أعلاه وإعادة تشغيل المترجم.");
+//
+//            printFinalStatistics(flaskSymbolBuilder, jinjaSymbolTable, unifiedTable);
+//            System.out.println("\n❌ فشل المشروع بسبب الأخطاء الدلالية.");
+//
 //        } else {
 //            System.out.println("\n✅ لا توجد أخطاء دلالية! جميع الروابط صحيحة.");
 //
@@ -209,10 +217,10 @@
 //                System.err.println("❌ خطأ أثناء توليد الكود: " + e.getMessage());
 //                e.printStackTrace();
 //            }
-//        }
 //
-//        printFinalStatistics(flaskSymbolBuilder, jinjaSymbolTable, unifiedTable);
-//        System.out.println("\n✅ المشروع يعمل بنجاح! تم دمج Flask و Jinja2 في مترجم واحد.");
+//            printFinalStatistics(flaskSymbolBuilder, jinjaSymbolTable, unifiedTable);
+//            System.out.println("\n✅ المشروع يعمل بنجاح! تم دمج Flask و Jinja2 في مترجم واحد.");
+//        }
 //    }
 //
 //    // ==================== المراقبة وإعادة التوليد (نسخة مع تجميع الأحداث/debounce) ====================
@@ -279,7 +287,9 @@
 //        System.out.println("\n🚀 تشغيل خادم Flask...");
 //
 //        // استخدم المسار الكامل لـ Python الذي يعمل عندك
+////        String pythonCmd = "C:\\Users\\scc\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe";
 //        String pythonCmd = "py";
+//
 //
 //        ProcessBuilder pb = new ProcessBuilder(
 //                pythonCmd, "Files/generated_app.py"
@@ -588,8 +598,6 @@
 
 
 
-
-
 package Merge_Symbol_tables;
 
 import ASTFlask.ASTPrinter;
@@ -627,7 +635,6 @@ public class Compiler {
     private static Process flaskProcess = null;
 
     public static void main(String[] args) throws Exception {
-        // 🔍 تشخيص: تأكد أن هذا هو نفس مسار مجلد Files الذي تحفظ فيه فعليًا من IntelliJ
         System.out.println("📂 المسار الذي يراقبه المترجم: " + Paths.get("Files").toAbsolutePath().normalize());
 
         boolean watch = false;
@@ -637,27 +644,22 @@ public class Compiler {
             if (arg.equals("--serve")) serve = true;
         }
 
-        // التوليد الأول
         compileAll();
 
-        // تشغيل الخادم وفتح المتصفح إذا طلب ذلك (فقط في هذا التشغيل الأول)
         if (serve) {
             startFlaskServer(true);
         }
 
-        // مراقبة الملفات وإعادة التوليد تلقائياً
         if (watch) {
             watchAndRegenerate(serve);
         }
     }
 
-    // ==================== دالة الترجمة الأساسية ====================
     private static void compileAll() throws IOException {
         System.out.println("╔══════════════════════════════════════════════════════════════╗");
         System.out.println("║     مترجم Flask + Jinja2 المتكامل - تحليل ورموز ودمج        ║");
         System.out.println("╚══════════════════════════════════════════════════════════════╝\n");
 
-        // ==================== 1. تحليل Python/Flask ====================
         System.out.println("📁 [1/4] تحليل ملف Flask (Python)...");
         String flaskFile = "Files/Flask.py";
 
@@ -698,7 +700,6 @@ public class Compiler {
 
         Operationflask.displaySymbolTable(flaskSymbolBuilder);
 
-        // ==================== 2. تحليل HTML/Jinja2 ====================
         System.out.println("\n📁 [2/4] تحليل ملف HTML/Jinja2...");
         String jinjaFile = "Files/templates/products.html";
 
@@ -743,7 +744,6 @@ public class Compiler {
 
         Operation.displaySymbolTable(jinjaSymbolTable);
 
-        // ==================== 3. بناء جدول الرموز الموحّد ====================
         System.out.println("\n🔗 [3/4] بناء جدول الرموز الموحّد وربط Python ↔ Jinja2...");
 
         SymbolTable unifiedTable = new SymbolTable();
@@ -751,7 +751,6 @@ public class Compiler {
         transferJinjaSymbolsToUnified(jinjaSymbolTable, unifiedTable);
         System.out.println("   ✅ تم نقل الرموز إلى الجدول الموحّد\n");
 
-        // ==================== 4. التحليل الدلالي ====================
         System.out.println("⚙️  [4/4] التحليل الدلالي وطباعة جدول الرموز الموحّد...");
 
         String flaskRawCode = Files.readString(Paths.get(flaskFile));
@@ -763,9 +762,6 @@ public class Compiler {
 
         boolean hasErrors = unifiedTable.hasErrors();
 
-        // ============================================================
-        // 🔥 التعديل الوحيد هنا 🔥
-        // ============================================================
         if (hasErrors) {
             System.out.println("\n⚠️  الأخطاء الدلالية المكتشفة (" + unifiedTable.getErrors().size() + "):");
             for (String error : unifiedTable.getErrors()) {
@@ -780,14 +776,11 @@ public class Compiler {
         } else {
             System.out.println("\n✅ لا توجد أخطاء دلالية! جميع الروابط صحيحة.");
 
-            // ==================== 5. توليد الكود ====================
             System.out.println("\n📁 [5/5] توليد الكود من AST...");
 
             try {
                 FlaskCodeGenerator flaskGenerator = new FlaskCodeGenerator();
                 flaskGenerator.generate(flaskProgram);
-                // 🔄 دمج آخر بيانات products القادمة فعليًا من المتصفح — في الملف المُولَّد فقط.
-                // Files/Flask.py (المصدر) لا يُعدَّل أبدًا.
                 flaskGenerator.applyLiveProductsState("Files/.products_state.txt");
                 flaskGenerator.saveToFile("Files/generated_app.py");
 
@@ -813,7 +806,6 @@ public class Compiler {
         }
     }
 
-    // ==================== المراقبة وإعادة التوليد (نسخة مع تجميع الأحداث/debounce) ====================
     private static void watchAndRegenerate(boolean serve) throws Exception {
         System.out.println("\n👁️  بدء مراقبة التغييرات في مجلد Files/ ...");
         WatchService watchService = FileSystems.getDefault().newWatchService();
@@ -823,9 +815,6 @@ public class Compiler {
         while (true) {
             WatchKey key = watchService.take();
 
-            // تجميع كل الأحداث المتلاحقة خلال 300ms كإعادة توليد واحدة فقط
-            // (بعض أنظمة الملفات تُطلق أكثر من ENTRY_MODIFY لعملية حفظ واحدة،
-            //  وهنا نفس Flask.py هو من يُعدَّل نفسه عبر save_products)
             List<WatchEvent<?>> events = new ArrayList<>(key.pollEvents());
             Thread.sleep(300);
 
@@ -840,8 +829,6 @@ public class Compiler {
                 if (event.kind() == OVERFLOW) continue;
                 String changedFile = event.context().toString();
 
-                // ⛔ تجاهل الملفات التي يكتبها المترجم نفسه، وإلا دخل في حلقة
-                // توليد لا تنتهي (كل توليد يُنتج ملفات، والملفات تُشغّل توليدًا جديدًا...)
                 if (changedFile.equals("generated_app.py") || changedFile.equals("generated_template.html")) {
                     continue;
                 }
@@ -864,10 +851,6 @@ public class Compiler {
         }
     }
 
-    // ==================== تشغيل Flask وفتح المتصفح ====================
-    // ==================== تشغيل Flask وفتح المتصفح (نسخة محسنة) ====================
-    // openBrowser = true فقط عند أول تشغيل للخادم؛ إعادة التشغيل بعد كل توليد لاحق
-    // لا تفتح تبويبًا جديدًا في المتصفح (نفس التبويب المفتوح يعمل تلقائيًا مع الكود الجديد).
     private static void startFlaskServer(boolean openBrowser) {
         if (!Files.exists(Paths.get("Files/generated_app.py"))) {
             System.err.println("❌ ملف generated_app.py غير موجود، لا يمكن تشغيل الخادم.");
@@ -876,10 +859,7 @@ public class Compiler {
 
         System.out.println("\n🚀 تشغيل خادم Flask...");
 
-        // استخدم المسار الكامل لـ Python الذي يعمل عندك
-//        String pythonCmd = "C:\\Users\\scc\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe";
         String pythonCmd = "py";
-
 
         ProcessBuilder pb = new ProcessBuilder(
                 pythonCmd, "Files/generated_app.py"
@@ -890,7 +870,6 @@ public class Compiler {
         try {
             flaskProcess = pb.start();
 
-            // 🔍 تشخيص: اعرض مخرجات Python (بما فيها أي Traceback) مباشرة في نافذة IntelliJ
             Process finalFlaskProcess = flaskProcess;
             Thread outputThread = new Thread(() -> {
                 try (BufferedReader reader = new BufferedReader(
@@ -906,8 +885,6 @@ public class Compiler {
             outputThread.start();
 
             System.out.println("   ⏳ في انتظار إقلاع الخادم (3 ثوانٍ)...");
-
-            // انتظر 3 ثوانٍ لضمان إقلاع Flask بالكامل
             Thread.sleep(3000);
 
             if (!openBrowser) {
@@ -920,7 +897,6 @@ public class Compiler {
                 Desktop.getDesktop().browse(new URI("http://localhost:5000"));
                 System.out.println("   ✅ تم فتح المتصفح بنجاح.");
             } catch (Exception e) {
-                // محاولة بديلة لنظام Windows
                 try {
                     Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler http://localhost:5000");
                     System.out.println("   ✅ تم فتح المتصفح (طريقة بديلة).");
@@ -959,7 +935,6 @@ public class Compiler {
             System.out.println("🌐 فتح المتصفح على " + url);
             Desktop.getDesktop().browse(new URI(url));
         } catch (Exception e) {
-            // محاولة ثانية باستخدام أمر النظام مباشرة
             try {
                 String os = System.getProperty("os.name").toLowerCase();
                 Runtime rt = Runtime.getRuntime();
@@ -982,21 +957,24 @@ public class Compiler {
             flaskProcess.destroyForcibly();
             System.out.println("⏹️  تم إيقاف الخادم السابق.");
             try {
-                Thread.sleep(500); // انتظر حتى يتحرر المنفذ
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
-        startFlaskServer(false); // لا تفتح تبويب متصفح جديد عند إعادة التشغيل
+        startFlaskServer(false);
     }
 
-    // ==================== نقل رموز Flask ====================
+    // ==================== 🔥 التعديل الوحيد هنا 🔥 ====================
     private static void transferFlaskSymbolsToUnified(SymbolTableBuilder source, SymbolTable target) {
         System.out.println("   📦 نقل رموز Flask إلى الجدول الموحّد...");
 
         Scope globalScope = source.getCurrentScope();
         int count = 0;
         int routeCount = 0;
+
+        // 🔥 الحصول على المتغيرات المتداخلة (nested symbols)
+        Map<String, List<VariableSymbol>> nestedSymbols = source.getAllNestedSymbols();
 
         for (ASTFlask.SymbolTable.Symbol symbol : globalScope.symbols.values()) {
             if (symbol instanceof VariableSymbol) {
@@ -1013,9 +991,31 @@ public class Compiler {
 
                 SymbolTable.SymbolKind kind = SymbolTable.SymbolKind.VARIABLE;
 
-                if (var.type.equals("list") || (var.value instanceof List)) {
+                // 🔥🔥🔥 تحديد LIST بناءً على:
+                // 1. النوع (type)
+                // 2. القيمة (value)
+                // 3. الحقول المتداخلة (nested symbols)
+                boolean isList = false;
+
+                // 1. فحص النوع
+                if (var.type.equals("list") || var.type.equals("List")) {
+                    isList = true;
+                }
+
+                // 2. فحص القيمة الفعلية
+                if (var.value instanceof List) {
+                    isList = true;
+                }
+
+                // 3. فحص الحقول المتداخلة (إذا كان هناك nested fields -> هو list)
+                if (nestedSymbols.containsKey(var.name) && !nestedSymbols.get(var.name).isEmpty()) {
+                    isList = true;
+                }
+
+                if (isList) {
                     kind = SymbolTable.SymbolKind.LIST;
 
+                    // تسجيل المفاتيح إذا كانت قائمة من القواميس
                     if (var.value instanceof List) {
                         List<?> list = (List<?>) var.value;
                         if (!list.isEmpty() && list.get(0) instanceof Map) {
@@ -1028,6 +1028,15 @@ public class Compiler {
                             }
                             target.registerListKeys(var.name, keys);
                         }
+                    } else if (nestedSymbols.containsKey(var.name)) {
+                        // استخراج المفاتيح من nested symbols
+                        List<String> keys = new ArrayList<>();
+                        for (VariableSymbol nested : nestedSymbols.get(var.name)) {
+                            String fullName = nested.name;
+                            String fieldName = fullName.substring(fullName.indexOf(".") + 1);
+                            keys.add(fieldName);
+                        }
+                        target.registerListKeys(var.name, keys);
                     }
                 }
 
@@ -1079,7 +1088,6 @@ public class Compiler {
         System.out.println("      ✅ تم نقل " + count + " رمز من Flask (" + routeCount + " routes)");
     }
 
-    // ==================== نقل رموز Jinja ====================
     private static void transferJinjaSymbolsToUnified(HtmlCssJinjaSymbolTable source, SymbolTable target) {
         System.out.println("   📦 نقل رموز Jinja إلى الجدول الموحّد...");
         int count = 0;
@@ -1132,7 +1140,6 @@ public class Compiler {
         System.out.println("      ✅ تم نقل " + count + " رمز من Jinja (" + loopCount + " loops)");
     }
 
-    // ==================== الإحصائيات النهائية ====================
     private static void printFinalStatistics(SymbolTableBuilder flaskBuilder,
                                              HtmlCssJinjaSymbolTable jinjaTable,
                                              SymbolTable unifiedTable) {
