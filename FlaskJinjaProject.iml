@@ -10,7 +10,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../../../antlr/lib/antlr-4.13.2-complete (1).jar!/" />
+          <root url="jar://C:/antlr/lib/antlr-4.13.2-complete (1).jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

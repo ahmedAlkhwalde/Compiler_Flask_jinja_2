@@ -17,7 +17,6 @@
 //    private Set<String> builtinFunctions = new HashSet<>();
 //    private Set<String> builtinConstants = new HashSet<>();
 //    private Map<String, List<Symbol>> symbolUsage = new HashMap<>();
-//
 //    private Map<String, List<VariableSymbol>> nestedSymbols = new HashMap<>();
 //
 //    private static final Set<String> COMPLEX_TYPES = new HashSet<>(Arrays.asList(
@@ -31,7 +30,6 @@
 //
 //        addBuiltinFunctions();
 //    }
-//
 //
 //    private void addBuiltinFunctions() {
 //        String[] builtins = {
@@ -48,7 +46,7 @@
 //        builtinConstants.add("True");
 //        builtinConstants.add("False");
 //        builtinConstants.add("None");
-//        builtinConstants.add("__Name__");
+//        builtinConstants.add("__name__");
 //
 //        VariableSymbol trueSymbol = new VariableSymbol("True", "bool", 0, globalScope, true);
 //        VariableSymbol falseSymbol = new VariableSymbol("False", "bool", 0, globalScope, false);
@@ -60,7 +58,6 @@
 //        globalScope.addSymbol(noneSymbol);
 //        globalScope.addSymbol(nameSymbol);
 //    }
-//
 //
 //    private void exitScope() {
 //        scopeStack.pop();
@@ -77,9 +74,25 @@
 //        scopeStack.push(newScope);
 //    }
 //
-//    private void addSymbolToProperScope(Symbol symbol) {
-//        boolean isGlobal = false;
+//    private boolean variableExistsInCurrentScope(String name) {
+//        return currentScope.lookupCurrent(name) != null;
+//    }
 //
+//    private boolean isBuiltin(String name) {
+//        return builtinConstants.contains(name) || builtinFunctions.contains(name);
+//    }
+//
+//    private void addSymbolToProperScope(Symbol symbol) {
+//        if (symbol == null || symbol.name == null || symbol.name.isEmpty()) {
+//            return;
+//        }
+//
+//        // تجاهل الثوابت المدمجة
+//        if (builtinConstants.contains(symbol.name)) {
+//            return;
+//        }
+//
+//        boolean isGlobal = false;
 //        if (currentScope == globalScope || currentScope.name.equals("program")) {
 //            isGlobal = true;
 //        }
@@ -90,59 +103,49 @@
 //
 //        Scope targetScope = isGlobal ? globalScope : currentScope;
 //
-//        // 🔥 تسجيل جميع التعريفات (حتى المكررة) مباشرة في الـ Scope
-//        targetScope.allDeclarations.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol.line);
-//
-//        // التحقق من التكرار في نفس النطاق
+//        // 🔥 التحقق من التكرار - نسمح بالتكرار في حالات محددة
 //        Symbol existing = targetScope.lookupCurrent(symbol.name);
-//        if (existing == null) {
-//            targetScope.addSymbol(symbol);
-//            recordSymbolUsage(symbol);
-//
-//            if (symbol instanceof VariableSymbol) {
-//                VariableSymbol var = (VariableSymbol) symbol;
-//                if (COMPLEX_TYPES.contains(var.type)) {
-//                    // complex type handling
-//                }
+//        if (existing != null) {
+//            // إذا كان نفس السطر، نتجاهل
+//            if (existing.line == symbol.line) {
+//                return;
 //            }
-//        } else {
-//            // 🔥 هذا خطأ Scope - سجله في جدول الأخطاء
+//            // إذا كان مستورداً، نتجاهل
+//            if (existing instanceof VariableSymbol &&
+//                    ("imported".equals(((VariableSymbol) existing).type) ||
+//                            "module".equals(((VariableSymbol) existing).type))) {
+//                return;
+//            }
+//            // الدوال يمكن إعادة تعريفها (مثل التحميل الزائد أو إعادة التعريف في نطاقات مختلفة)
+//            if (existing instanceof FunctionSymbol && symbol instanceof FunctionSymbol) {
+//                return;
+//            }
+//            // إذا كان المتغير موجوداً بالفعل ونحاول إضافته مرة أخرى بنفس النوع
+//            if (existing instanceof VariableSymbol && symbol instanceof VariableSymbol) {
+//                // نسمح بإعادة التعريف إذا كانت القيمة مختلفة (مثل products = [...] بعد import)
+//                return;
+//            }
+//            // فقط نبلغ عن الأخطاء الحقيقية
 //            System.err.println("[SCOPE ERROR] Variable '" + symbol.name +
 //                    "' already defined in scope '" + targetScope.name +
 //                    "' at line " + symbol.line +
 //                    " (first at line " + existing.line + ")");
+//            return;
+//        }
+//
+//        // تسجيل التعريف
+//        targetScope.allDeclarations.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol.line);
+//        targetScope.addSymbol(symbol);
+//        recordSymbolUsage(symbol);
+//
+//        if (symbol instanceof VariableSymbol) {
+//            VariableSymbol var = (VariableSymbol) symbol;
+//            if (COMPLEX_TYPES.contains(var.type)) {
+//                // معالجة الأنواع المركبة
+//            }
 //        }
 //    }
 //
-////
-////    private void addSymbolToProperScope(Symbol symbol) {
-////        boolean isGlobal = false;
-////
-////        if (currentScope == globalScope || currentScope.name.equals("program")) {
-////            isGlobal = true;
-////        }
-////
-////        if (symbol instanceof FunctionSymbol && isDecoratedFunction()) {
-////            isGlobal = true;
-////        }
-////
-////        Scope targetScope = isGlobal ? globalScope : currentScope;
-////
-////        Symbol existing = targetScope.lookupCurrent(symbol.name);
-////        if (existing == null) {
-////            targetScope.addSymbol(symbol);
-////            String scopeType = targetScope == globalScope ? "global" : "local";
-////            recordSymbolUsage(symbol);
-////
-////            if (symbol instanceof VariableSymbol) {
-////                VariableSymbol var = (VariableSymbol) symbol;
-////                if (COMPLEX_TYPES.contains(var.type)) {
-////                }
-////            }
-////        }
-////    }
-////
-////
 //    private boolean isDecoratedFunction() {
 //        for (int i = scopeStack.size() - 1; i >= 0; i--) {
 //            if (scopeStack.get(i).name.contains("decorated")) {
@@ -155,7 +158,6 @@
 //    private void recordSymbolUsage(Symbol symbol) {
 //        symbolUsage.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol);
 //    }
-//
 //
 //    @Override
 //    public Object visitSuite(ProjectParser.SuiteContext ctx) {
@@ -231,16 +233,17 @@
 //    public Object visitExprStmt(ProjectParser.ExprStmtContext ctx) {
 //        int line = ctx.getStart().getLine();
 //
+//        // استخراج المتغيرات من النص
 //        String exprText = ctx.getText();
 //        extractVariableAndNestedFieldsFromText(exprText, line);
 //
 //        Object result = super.visitExprStmt(ctx);
 //
+//        // معالجة التعيينات من AST فقط إذا لم يكن المتغير موجوداً مسبقاً
 //        detectAndProcessAssignmentsFromAST(ctx);
 //
 //        return result;
 //    }
-//
 //
 //    private void extractVariableAndNestedFieldsFromText(String exprText, int line) {
 //        if (exprText.contains("=")) {
@@ -251,9 +254,11 @@
 //
 //                String varName = extractMainVariableName(leftSide);
 //
-//                if (varName != null && !varName.isEmpty()) {
-//                    addVariableFromText(varName, line);
-//
+//                if (varName != null && !varName.isEmpty() && !isBuiltin(varName)) {
+//                    // نتحقق من عدم وجود المتغير مسبقاً
+//                    if (!variableExistsInCurrentScope(varName)) {
+//                        addVariableFromText(varName, line);
+//                    }
 //                    analyzeRightSideForNestedStructures(varName, rightSide, line);
 //                }
 //            }
@@ -276,19 +281,18 @@
 //    private void analyzeRightSideForNestedStructures(String parentVar, String rightSide, int line) {
 //        if (rightSide.startsWith("[") && rightSide.contains("{")) {
 //            extractDictFieldsFromList(parentVar, rightSide, line);
-//        }
-//        else if (rightSide.startsWith("{")) {
+//        } else if (rightSide.startsWith("{")) {
 //            extractFieldsFromDict(parentVar, rightSide, line);
 //        }
-//        else if (rightSide.startsWith("[") && !rightSide.contains("{")) {
-//
-//        }
 //    }
+//
 //    private void extractFieldsFromDict(String parentVar, String dictText, int line) {
 //        Set<String> fields = extractFieldsFromDictText(parentVar, dictText, line);
 //        if (!fields.isEmpty()) {
+//            // تم استخراج الحقول
 //        }
 //    }
+//
 //    private void extractDictFieldsFromList(String parentVar, String listText, int line) {
 //        try {
 //            int start = listText.indexOf("{");
@@ -307,8 +311,10 @@
 //            }
 //
 //            if (!uniqueFields.isEmpty()) {
+//                // تم استخراج الحقول
 //            }
 //        } catch (Exception e) {
+//            // تجاهل الأخطاء
 //        }
 //    }
 //
@@ -334,7 +340,6 @@
 //
 //        try {
 //            dictText = dictText.substring(1, dictText.length() - 1);
-//
 //            String[] pairs = splitDictPairs(dictText);
 //
 //            for (String pair : pairs) {
@@ -342,7 +347,6 @@
 //                    String[] keyValue = pair.split(":", 2);
 //                    if (keyValue.length >= 1) {
 //                        String key = keyValue[0].trim();
-//
 //                        key = removeQuotes(key);
 //
 //                        if (!key.isEmpty()) {
@@ -353,6 +357,7 @@
 //                }
 //            }
 //        } catch (Exception e) {
+//            // تجاهل الأخطاء
 //        }
 //
 //        return fields;
@@ -413,9 +418,7 @@
 //
 //        nestedSymbols.computeIfAbsent(parentName, k -> new ArrayList<>())
 //                .add(nestedSymbol);
-//
 //    }
-//
 //
 //    private void detectAndProcessAssignmentsFromAST(ProjectParser.ExprStmtContext ctx) {
 //        int line = ctx.getStart().getLine();
@@ -425,11 +428,14 @@
 //                Object target = super.visit(ctx.testlist_star_expr(0));
 //                if (target instanceof NameExpression) {
 //                    String varName = ((NameExpression) target).name;
-//                    addVariable(varName, line);
+//                    // نتحقق من عدم وجود المتغير مسبقاً قبل إضافته
+//                    if (!variableExistsInCurrentScope(varName) && !isBuiltin(varName)) {
+//                        addVariable(varName, line);
+//                    }
 //                }
 //            } catch (Exception e) {
 //                String varName = extractVariableNameFromContext(ctx);
-//                if (varName != null) {
+//                if (varName != null && !variableExistsInCurrentScope(varName) && !isBuiltin(varName)) {
 //                    addVariable(varName, line);
 //                }
 //            }
@@ -444,17 +450,17 @@
 //                return extractMainVariableName(text);
 //            }
 //        } catch (Exception e) {
+//            // تجاهل
 //        }
 //        return null;
 //    }
 //
 //    private void addVariableFromText(String varName, int line) {
-//        if (builtinFunctions.contains(varName) || builtinConstants.contains(varName)) {
+//        if (isBuiltin(varName)) {
 //            return;
 //        }
 //
-//        Symbol existing = currentScope.lookupCurrent(varName);
-//        if (existing == null) {
+//        if (!variableExistsInCurrentScope(varName)) {
 //            VariableSymbol varSymbol = new VariableSymbol(varName, "any", line, currentScope);
 //            addSymbolToProperScope(varSymbol);
 //        }
@@ -477,8 +483,10 @@
 //                scopeName = "for_loop_" + varName + "_" + line;
 //
 //                enterScope(scopeName);
-//                VariableSymbol loopVar = new VariableSymbol(varName, "iteration", line, currentScope);
-//                addSymbolToProperScope(loopVar);
+//                if (!variableExistsInCurrentScope(varName)) {
+//                    VariableSymbol loopVar = new VariableSymbol(varName, "iteration", line, currentScope);
+//                    addSymbolToProperScope(loopVar);
+//                }
 //            } else if (exprlistResult instanceof List<?>) {
 //                List<?> items = (List<?>) exprlistResult;
 //                for (Object item : items) {
@@ -487,8 +495,10 @@
 //                        scopeName = "for_loop_" + varName + "_" + line;
 //
 //                        enterScope(scopeName);
-//                        VariableSymbol loopVar = new VariableSymbol(varName, "iteration", line, currentScope);
-//                        addSymbolToProperScope(loopVar);
+//                        if (!variableExistsInCurrentScope(varName)) {
+//                            VariableSymbol loopVar = new VariableSymbol(varName, "iteration", line, currentScope);
+//                            addSymbolToProperScope(loopVar);
+//                        }
 //                        break;
 //                    }
 //                }
@@ -518,18 +528,19 @@
 //        String name = ctx.getText();
 //        int line = ctx.getStart().getLine();
 //
-//        if (builtinFunctions.contains(name) || builtinConstants.contains(name)) {
+//        if (isBuiltin(name)) {
 //            return new NameExpression(name, line);
 //        }
 //
 //        Symbol symbol = currentScope.lookup(name);
 //
 //        if (symbol == null) {
+//            // التحقق من الاستيرادات
 //            boolean isImported = false;
 //            for (Symbol s : globalScope.symbols.values()) {
 //                if (s instanceof VariableSymbol) {
 //                    VariableSymbol var = (VariableSymbol) s;
-//                    if ((var.type.equals("Module") || var.type.equals("Imported")) &&
+//                    if ((var.type.equals("module") || var.type.equals("imported")) &&
 //                            var.name.equals(name)) {
 //                        isImported = true;
 //                        break;
@@ -538,6 +549,7 @@
 //            }
 //
 //            if (!isImported) {
+//                // قد يكون متغيراً جديداً
 //            }
 //        } else {
 //            recordSymbolUsage(symbol);
@@ -557,12 +569,15 @@
 //
 //                VariableSymbol moduleSymbol = new VariableSymbol(
 //                        alias != null ? alias : moduleName,
-//                        "Module",
+//                        "module",
 //                        line,
 //                        globalScope
 //                );
-//                globalScope.addSymbol(moduleSymbol);
-//                recordSymbolUsage(moduleSymbol);
+//                // لا نضيف إذا كان موجوداً مسبقاً
+//                if (!variableExistsInCurrentScope(moduleSymbol.name)) {
+//                    globalScope.addSymbol(moduleSymbol);
+//                    recordSymbolUsage(moduleSymbol);
+//                }
 //            }
 //        }
 //
@@ -584,8 +599,10 @@
 //                            line,
 //                            globalScope
 //                    );
-//                    globalScope.addSymbol(importSymbol);
-//                    recordSymbolUsage(importSymbol);
+//                    if (!variableExistsInCurrentScope(importSymbol.name)) {
+//                        globalScope.addSymbol(importSymbol);
+//                        recordSymbolUsage(importSymbol);
+//                    }
 //                }
 //            }
 //        }
@@ -604,11 +621,15 @@
 //            if (existing instanceof VariableSymbol) {
 //                ((VariableSymbol) existing).scope = globalScope;
 //                currentScope.symbols.remove(name);
-//                globalScope.addSymbol(existing);
+//                if (!variableExistsInCurrentScope(name)) {
+//                    globalScope.addSymbol(existing);
+//                }
 //            } else {
-//                VariableSymbol globalVar = new VariableSymbol(name, "any", line, globalScope);
-//                globalScope.addSymbol(globalVar);
-//                recordSymbolUsage(globalVar);
+//                if (!variableExistsInCurrentScope(name)) {
+//                    VariableSymbol globalVar = new VariableSymbol(name, "any", line, globalScope);
+//                    globalScope.addSymbol(globalVar);
+//                    recordSymbolUsage(globalVar);
+//                }
 //            }
 //        }
 //
@@ -771,8 +792,10 @@
 //                Object varObj = super.visit(itemCtx.test(1));
 //                if (varObj instanceof NameExpression) {
 //                    String varName = ((NameExpression) varObj).name;
-//                    VariableSymbol withVar = new VariableSymbol(varName, "context", line, currentScope);
-//                    addSymbolToProperScope(withVar);
+//                    if (!variableExistsInCurrentScope(varName)) {
+//                        VariableSymbol withVar = new VariableSymbol(varName, "context", line, currentScope);
+//                        addSymbolToProperScope(withVar);
+//                    }
 //                }
 //            }
 //        }
@@ -784,7 +807,6 @@
 //        exitScope();
 //        return null;
 //    }
-//
 //
 //    public List<VariableSymbol> getNestedSymbols(String parentName) {
 //        return nestedSymbols.getOrDefault(parentName, new ArrayList<>());
@@ -822,7 +844,6 @@
 //            System.out.println();
 //        }
 //    }
-//
 //
 //    public Symbol advancedLookup(String name, LookupOptions options) {
 //        Scope startingScope = options.startFromCurrent ? currentScope : globalScope;
@@ -1018,8 +1039,11 @@
 //            return false;
 //        }
 //
-//        Symbol existing = currentScope.lookupCurrent(symbol.name);
-//        if (existing != null) {
+//        if (isBuiltin(symbol.name)) {
+//            return false;
+//        }
+//
+//        if (variableExistsInCurrentScope(symbol.name)) {
 //            return false;
 //        }
 //
@@ -1032,7 +1056,6 @@
 //
 //        return success;
 //    }
-//
 //
 //    public boolean updateSymbol(String name, Symbol newSymbol) {
 //        SymbolLookupResult lookupResult = lookupWithScope(name);
@@ -1059,13 +1082,11 @@
 //        boolean success = lookupResult.scope.removeSymbol(name);
 //        if (success) {
 //            symbolUsage.remove(name);
-//
 //            nestedSymbols.remove(name);
 //        }
 //
 //        return success;
 //    }
-//
 //
 //    public int deleteAllSymbolsByType(String type) {
 //        List<Symbol> symbolsToDelete = findAllSymbolsByType(type);
@@ -1095,7 +1116,6 @@
 //        if (success) {
 //            symbolUsage.remove(name);
 //            nestedSymbols.remove(name);
-//        } else {
 //        }
 //
 //        return success;
@@ -1104,13 +1124,11 @@
 //    public boolean renameSymbol(String oldName, String newName) {
 //        SymbolLookupResult lookupResult = lookupWithScope(oldName);
 //        if (lookupResult == null) {
-//
 //            return false;
 //        }
 //
 //        Symbol existingNewName = lookupResult.scope.lookupCurrent(newName);
 //        if (existingNewName != null) {
-//
 //            return false;
 //        }
 //
@@ -1196,6 +1214,9 @@
 //        List<Symbol> allSymbols = getAllSymbolsRecursive(globalScope, visitedScopes);
 //
 //        for (Symbol symbol : allSymbols) {
+//            if (isBuiltin(symbol.name)) {
+//                continue;
+//            }
 //            List<Symbol> usage = symbolUsage.get(symbol.name);
 //            if (usage == null || usage.size() <= 1) {
 //                unused.add(symbol);
@@ -1318,37 +1339,17 @@
 //        }
 //    }
 //
-//
 //    private Scope determineTargetScope(Symbol symbol) {
 //        if (symbol instanceof FunctionSymbol || symbol instanceof ClassSymbol) {
 //            return globalScope;
 //        }
 //
-//        if (currentScope == globalScope || currentScope.name.equals("Program")) {
+//        if (currentScope == globalScope || currentScope.name.equals("program")) {
 //            return globalScope;
 //        }
 //
 //        return currentScope;
 //    }
-//
-//
-//
-//    public void printSymbolTable() {
-//        System.out.println("\n" + "=".repeat(60));
-//        System.out.println("SYMBOL TABLE");
-//        System.out.println("=".repeat(60));
-//
-//        Set<Scope> visitedScopes = new HashSet<>();
-//        printScopeHierarchy(globalScope, 0, visitedScopes);
-//
-//        System.out.println("\n" + "=".repeat(60));
-//        System.out.println("SUMMARY");
-//        System.out.println("=".repeat(60));
-//        printSummary();
-//
-//        printNestedSymbols();
-//    }
-//
 //
 //    private Scope findScopeByName(String scopeName) {
 //        if (scopeName.equals("global")) {
@@ -1375,7 +1376,21 @@
 //        return null;
 //    }
 //
+//    public void printSymbolTable() {
+//        System.out.println("\n" + "=".repeat(60));
+//        System.out.println("SYMBOL TABLE");
+//        System.out.println("=".repeat(60));
 //
+//        Set<Scope> visitedScopes = new HashSet<>();
+//        printScopeHierarchy(globalScope, 0, visitedScopes);
+//
+//        System.out.println("\n" + "=".repeat(60));
+//        System.out.println("SUMMARY");
+//        System.out.println("=".repeat(60));
+//        printSummary();
+//
+//        printNestedSymbols();
+//    }
 //
 //    private void printScopeHierarchy(Scope scope, int depth, Set<Scope> visitedScopes) {
 //        if (scope == null || visitedScopes.contains(scope)) {
@@ -1400,7 +1415,7 @@
 //        for (Symbol symbol : scope.symbols.values()) {
 //            if (symbol instanceof VariableSymbol) {
 //                VariableSymbol var = (VariableSymbol) symbol;
-//                if (var.type.equals("Module") || var.type.equals("Imported") || var.type.equals("Star_Import")) {
+//                if (var.type.equals("module") || var.type.equals("imported") || var.type.equals("star_import")) {
 //                    imports.add(symbol);
 //                } else if (!builtinConstants.contains(var.name)) {
 //                    variables.add(symbol);
@@ -1417,7 +1432,7 @@
 //            for (Symbol var : variables) {
 //                VariableSymbol v = (VariableSymbol) var;
 //                String typeStr = v.type.equals("iteration") ? "loop var" :
-//                        v.type.equals("Context") ? "Context var" :
+//                        v.type.equals("context") ? "Context var" :
 //                                v.type.equals("any") ? "Variable" : v.type;
 //
 //                System.out.println(indent + "    • " + v.name + " (" + typeStr + ") at line " + v.line);
@@ -1506,6 +1521,9 @@
 //        System.out.println("  • Variables With Nested Fields: " + nestedSymbols.size());
 //    }
 //
+//    public Scope getCurrentScope() {
+//        return currentScope;
+//    }
 //
 //    public static class LookupOptions {
 //        public boolean startFromCurrent = false;
@@ -1519,7 +1537,6 @@
 //            this.startFromCurrent = value;
 //            return this;
 //        }
-//
 //
 //        public LookupOptions typeFilter(String type) {
 //            this.typeFilter = type;
@@ -1574,37 +1591,12 @@
 //            );
 //        }
 //    }
-//
-//    public Scope getCurrentScope() {
-//        return currentScope;
-//    }
-//
 //}
 //
 //
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//
+//
+//
 
 
 
@@ -1692,6 +1684,7 @@ public class SymbolTableBuilder extends Visitor {
         return builtinConstants.contains(name) || builtinFunctions.contains(name);
     }
 
+    // 🔥🔥🔥 الكود المعدل هنا 🔥🔥🔥
     private void addSymbolToProperScope(Symbol symbol) {
         if (symbol == null || symbol.name == null || symbol.name.isEmpty()) {
             return;
@@ -1713,38 +1706,20 @@ public class SymbolTableBuilder extends Visitor {
 
         Scope targetScope = isGlobal ? globalScope : currentScope;
 
-        // 🔥 التحقق من التكرار - نسمح بالتكرار في حالات محددة
+        // 🔥 التسجيل يجب أن يحدث دائماً في allDeclarations
+        targetScope.allDeclarations.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol.line);
+
+        // التحقق من التكرار
         Symbol existing = targetScope.lookupCurrent(symbol.name);
         if (existing != null) {
-            // إذا كان نفس السطر، نتجاهل
-            if (existing.line == symbol.line) {
-                return;
-            }
-            // إذا كان مستورداً، نتجاهل
-            if (existing instanceof VariableSymbol &&
-                    ("imported".equals(((VariableSymbol) existing).type) ||
-                            "module".equals(((VariableSymbol) existing).type))) {
-                return;
-            }
-            // الدوال يمكن إعادة تعريفها (مثل التحميل الزائد أو إعادة التعريف في نطاقات مختلفة)
-            if (existing instanceof FunctionSymbol && symbol instanceof FunctionSymbol) {
-                return;
-            }
-            // إذا كان المتغير موجوداً بالفعل ونحاول إضافته مرة أخرى بنفس النوع
-            if (existing instanceof VariableSymbol && symbol instanceof VariableSymbol) {
-                // نسمح بإعادة التعريف إذا كانت القيمة مختلفة (مثل products = [...] بعد import)
-                return;
-            }
-            // فقط نبلغ عن الأخطاء الحقيقية
+            // تم تسجيل السطر في allDeclarations، ولكن لا نضيف الرمز مرة أخرى
             System.err.println("[SCOPE ERROR] Variable '" + symbol.name +
                     "' already defined in scope '" + targetScope.name +
-                    "' at line " + symbol.line +
-                    " (first at line " + existing.line + ")");
+                    "' at line " + existing.line +
+                    " (redefined at line " + symbol.line + ")");
             return;
         }
 
-        // تسجيل التعريف
-        targetScope.allDeclarations.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol.line);
         targetScope.addSymbol(symbol);
         recordSymbolUsage(symbol);
 
@@ -1768,6 +1743,10 @@ public class SymbolTableBuilder extends Visitor {
     private void recordSymbolUsage(Symbol symbol) {
         symbolUsage.computeIfAbsent(symbol.name, k -> new ArrayList<>()).add(symbol);
     }
+
+    // ============================================================
+    // باقي الكود كما هو (جميع الدوال الأخرى لم تتغير)
+    // ============================================================
 
     @Override
     public Object visitSuite(ProjectParser.SuiteContext ctx) {
@@ -1843,13 +1822,11 @@ public class SymbolTableBuilder extends Visitor {
     public Object visitExprStmt(ProjectParser.ExprStmtContext ctx) {
         int line = ctx.getStart().getLine();
 
-        // استخراج المتغيرات من النص
         String exprText = ctx.getText();
         extractVariableAndNestedFieldsFromText(exprText, line);
 
         Object result = super.visitExprStmt(ctx);
 
-        // معالجة التعيينات من AST فقط إذا لم يكن المتغير موجوداً مسبقاً
         detectAndProcessAssignmentsFromAST(ctx);
 
         return result;
@@ -1865,7 +1842,6 @@ public class SymbolTableBuilder extends Visitor {
                 String varName = extractMainVariableName(leftSide);
 
                 if (varName != null && !varName.isEmpty() && !isBuiltin(varName)) {
-                    // نتحقق من عدم وجود المتغير مسبقاً
                     if (!variableExistsInCurrentScope(varName)) {
                         addVariableFromText(varName, line);
                     }
@@ -2038,7 +2014,6 @@ public class SymbolTableBuilder extends Visitor {
                 Object target = super.visit(ctx.testlist_star_expr(0));
                 if (target instanceof NameExpression) {
                     String varName = ((NameExpression) target).name;
-                    // نتحقق من عدم وجود المتغير مسبقاً قبل إضافته
                     if (!variableExistsInCurrentScope(varName) && !isBuiltin(varName)) {
                         addVariable(varName, line);
                     }
@@ -2145,7 +2120,6 @@ public class SymbolTableBuilder extends Visitor {
         Symbol symbol = currentScope.lookup(name);
 
         if (symbol == null) {
-            // التحقق من الاستيرادات
             boolean isImported = false;
             for (Symbol s : globalScope.symbols.values()) {
                 if (s instanceof VariableSymbol) {
@@ -2183,7 +2157,6 @@ public class SymbolTableBuilder extends Visitor {
                         line,
                         globalScope
                 );
-                // لا نضيف إذا كان موجوداً مسبقاً
                 if (!variableExistsInCurrentScope(moduleSymbol.name)) {
                     globalScope.addSymbol(moduleSymbol);
                     recordSymbolUsage(moduleSymbol);
@@ -3202,8 +3175,3 @@ public class SymbolTableBuilder extends Visitor {
         }
     }
 }
-
-
-
-
-

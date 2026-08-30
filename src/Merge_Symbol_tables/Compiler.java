@@ -1,3 +1,4 @@
+//
 //package Merge_Symbol_tables;
 //
 //import ASTFlask.ASTPrinter;
@@ -35,6 +36,9 @@
 //    private static Process flaskProcess = null;
 //
 //    public static void main(String[] args) throws Exception {
+//        // 🔍 تشخيص: تأكد أن هذا هو نفس مسار مجلد Files الذي تحفظ فيه فعليًا من IntelliJ
+//        System.out.println("📂 المسار الذي يراقبه المترجم: " + Paths.get("Files").toAbsolutePath().normalize());
+//
 //        boolean watch = false;
 //        boolean serve = false;
 //        for (String arg : args) {
@@ -45,9 +49,9 @@
 //        // التوليد الأول
 //        compileAll();
 //
-//        // تشغيل الخادم وفتح المتصفح إذا طلب ذلك
+//        // تشغيل الخادم وفتح المتصفح إذا طلب ذلك (فقط في هذا التشغيل الأول)
 //        if (serve) {
-//            startFlaskServer();
+//            startFlaskServer(true);
 //        }
 //
 //        // مراقبة الملفات وإعادة التوليد تلقائياً
@@ -63,7 +67,7 @@
 //        System.out.println("╚══════════════════════════════════════════════════════════════╝\n");
 //
 //        // ==================== 1. تحليل Python/Flask ====================
-//        System.out.println("📁 [1/5] تحليل ملف Flask (Python)...");
+//        System.out.println("📁 [1/4] تحليل ملف Flask (Python)...");
 //        String flaskFile = "Files/Flask.py";
 //
 //        System.out.println("\n=== FILE CONTENT (Flask) ===");
@@ -104,7 +108,7 @@
 //        Operationflask.displaySymbolTable(flaskSymbolBuilder);
 //
 //        // ==================== 2. تحليل HTML/Jinja2 ====================
-//        System.out.println("\n📁 [2/5] تحليل ملف HTML/Jinja2...");
+//        System.out.println("\n📁 [2/4] تحليل ملف HTML/Jinja2...");
 //        String jinjaFile = "Files/templates/products.html";
 //
 //        System.out.println("\n=== FILE CONTENT (HTML/Jinja2) ===");
@@ -149,7 +153,7 @@
 //        Operation.displaySymbolTable(jinjaSymbolTable);
 //
 //        // ==================== 3. بناء جدول الرموز الموحّد ====================
-//        System.out.println("\n🔗 [3/5] بناء جدول الرموز الموحّد وربط Python ↔ Jinja2...");
+//        System.out.println("\n🔗 [3/4] بناء جدول الرموز الموحّد وربط Python ↔ Jinja2...");
 //
 //        SymbolTable unifiedTable = new SymbolTable();
 //        transferFlaskSymbolsToUnified(flaskSymbolBuilder, unifiedTable);
@@ -184,6 +188,9 @@
 //            try {
 //                FlaskCodeGenerator flaskGenerator = new FlaskCodeGenerator();
 //                flaskGenerator.generate(flaskProgram);
+//                // 🔄 دمج آخر بيانات products القادمة فعليًا من المتصفح — في الملف المُولَّد فقط.
+//                // Files/Flask.py (المصدر) لا يُعدَّل أبدًا.
+//                flaskGenerator.applyLiveProductsState("Files/.products_state.txt");
 //                flaskGenerator.saveToFile("Files/generated_app.py");
 //
 //                JinjaCodeGenerator jinjaGenerator = new JinjaCodeGenerator();
@@ -208,7 +215,7 @@
 //        System.out.println("\n✅ المشروع يعمل بنجاح! تم دمج Flask و Jinja2 في مترجم واحد.");
 //    }
 //
-//    // ==================== المراقبة وإعادة التوليد ====================
+//    // ==================== المراقبة وإعادة التوليد (نسخة مع تجميع الأحداث/debounce) ====================
 //    private static void watchAndRegenerate(boolean serve) throws Exception {
 //        System.out.println("\n👁️  بدء مراقبة التغييرات في مجلد Files/ ...");
 //        WatchService watchService = FileSystems.getDefault().newWatchService();
@@ -217,18 +224,42 @@
 //
 //        while (true) {
 //            WatchKey key = watchService.take();
-//            for (WatchEvent<?> event : key.pollEvents()) {
-//                WatchEvent.Kind<?> kind = event.kind();
-//                if (kind == OVERFLOW) continue;
+//
+//            // تجميع كل الأحداث المتلاحقة خلال 300ms كإعادة توليد واحدة فقط
+//            // (بعض أنظمة الملفات تُطلق أكثر من ENTRY_MODIFY لعملية حفظ واحدة،
+//            //  وهنا نفس Flask.py هو من يُعدَّل نفسه عبر save_products)
+//            List<WatchEvent<?>> events = new ArrayList<>(key.pollEvents());
+//            Thread.sleep(300);
+//
+//            WatchKey extraKey = watchService.poll();
+//            if (extraKey != null) {
+//                events.addAll(extraKey.pollEvents());
+//                extraKey.reset();
+//            }
+//
+//            boolean relevant = false;
+//            for (WatchEvent<?> event : events) {
+//                if (event.kind() == OVERFLOW) continue;
 //                String changedFile = event.context().toString();
-//                System.out.println("\n🔄 تم اكتشاف تغيير في: " + changedFile + " - جاري إعادة التوليد...");
+//
+//                // ⛔ تجاهل الملفات التي يكتبها المترجم نفسه، وإلا دخل في حلقة
+//                // توليد لا تنتهي (كل توليد يُنتج ملفات، والملفات تُشغّل توليدًا جديدًا...)
+//                if (changedFile.equals("generated_app.py") || changedFile.equals("generated_template.html")) {
+//                    continue;
+//                }
+//
+//                System.out.println("🔄 تم اكتشاف تغيير في: " + changedFile);
+//                relevant = true;
+//            }
+//
+//            if (relevant) {
 //                try {
 //                    compileAll();
 //                    if (serve) {
 //                        restartFlaskServer();
 //                    }
-//                } catch (Exception e) {
-//                    System.err.println("❌ فشلت إعادة التوليد: " + e.getMessage());
+//                } catch (Exception ex) {
+//                    System.err.println("❌ فشلت إعادة التوليد: " + ex.getMessage());
 //                }
 //            }
 //            key.reset();
@@ -237,7 +268,9 @@
 //
 //    // ==================== تشغيل Flask وفتح المتصفح ====================
 //    // ==================== تشغيل Flask وفتح المتصفح (نسخة محسنة) ====================
-//    private static void startFlaskServer() {
+//    // openBrowser = true فقط عند أول تشغيل للخادم؛ إعادة التشغيل بعد كل توليد لاحق
+//    // لا تفتح تبويبًا جديدًا في المتصفح (نفس التبويب المفتوح يعمل تلقائيًا مع الكود الجديد).
+//    private static void startFlaskServer(boolean openBrowser) {
 //        if (!Files.exists(Paths.get("Files/generated_app.py"))) {
 //            System.err.println("❌ ملف generated_app.py غير موجود، لا يمكن تشغيل الخادم.");
 //            return;
@@ -246,7 +279,7 @@
 //        System.out.println("\n🚀 تشغيل خادم Flask...");
 //
 //        // استخدم المسار الكامل لـ Python الذي يعمل عندك
-//        String pythonCmd = "C:\\Users\\dell\\AppData\\Local\\Programs\\Python\\Python313\\python.exe";
+//        String pythonCmd = "py";
 //
 //        ProcessBuilder pb = new ProcessBuilder(
 //                pythonCmd, "Files/generated_app.py"
@@ -256,10 +289,31 @@
 //
 //        try {
 //            flaskProcess = pb.start();
+//
+//            // 🔍 تشخيص: اعرض مخرجات Python (بما فيها أي Traceback) مباشرة في نافذة IntelliJ
+//            Process finalFlaskProcess = flaskProcess;
+//            Thread outputThread = new Thread(() -> {
+//                try (BufferedReader reader = new BufferedReader(
+//                        new InputStreamReader(finalFlaskProcess.getInputStream()))) {
+//                    String line;
+//                    while ((line = reader.readLine()) != null) {
+//                        System.out.println("[Flask] " + line);
+//                    }
+//                } catch (IOException ignored) {
+//                }
+//            });
+//            outputThread.setDaemon(true);
+//            outputThread.start();
+//
 //            System.out.println("   ⏳ في انتظار إقلاع الخادم (3 ثوانٍ)...");
 //
 //            // انتظر 3 ثوانٍ لضمان إقلاع Flask بالكامل
 //            Thread.sleep(3000);
+//
+//            if (!openBrowser) {
+//                System.out.println("   ↩️  إعادة تشغيل صامتة (بدون فتح تبويب متصفح جديد).");
+//                return;
+//            }
 //
 //            System.out.println("🌐 فتح المتصفح على http://localhost:5000");
 //            try {
@@ -333,7 +387,7 @@
 //                Thread.currentThread().interrupt();
 //            }
 //        }
-//        startFlaskServer();
+//        startFlaskServer(false); // لا تفتح تبويب متصفح جديد عند إعادة التشغيل
 //    }
 //
 //    // ==================== نقل رموز Flask ====================
@@ -532,6 +586,10 @@
 //}
 
 
+
+
+
+
 package Merge_Symbol_tables;
 
 import ASTFlask.ASTPrinter;
@@ -705,6 +763,9 @@ public class Compiler {
 
         boolean hasErrors = unifiedTable.hasErrors();
 
+        // ============================================================
+        // 🔥 التعديل الوحيد هنا 🔥
+        // ============================================================
         if (hasErrors) {
             System.out.println("\n⚠️  الأخطاء الدلالية المكتشفة (" + unifiedTable.getErrors().size() + "):");
             for (String error : unifiedTable.getErrors()) {
@@ -712,6 +773,10 @@ public class Compiler {
             }
             System.out.println("\n🛑 **تم اكتشاف أخطاء دلالية، لن يتم توليد الكود!** 🛑");
             System.out.println("   يرجى تصحيح الأخطاء المذكورة أعلاه وإعادة تشغيل المترجم.");
+
+            printFinalStatistics(flaskSymbolBuilder, jinjaSymbolTable, unifiedTable);
+            System.out.println("\n❌ فشل المشروع بسبب الأخطاء الدلالية.");
+
         } else {
             System.out.println("\n✅ لا توجد أخطاء دلالية! جميع الروابط صحيحة.");
 
@@ -742,10 +807,10 @@ public class Compiler {
                 System.err.println("❌ خطأ أثناء توليد الكود: " + e.getMessage());
                 e.printStackTrace();
             }
-        }
 
-        printFinalStatistics(flaskSymbolBuilder, jinjaSymbolTable, unifiedTable);
-        System.out.println("\n✅ المشروع يعمل بنجاح! تم دمج Flask و Jinja2 في مترجم واحد.");
+            printFinalStatistics(flaskSymbolBuilder, jinjaSymbolTable, unifiedTable);
+            System.out.println("\n✅ المشروع يعمل بنجاح! تم دمج Flask و Jinja2 في مترجم واحد.");
+        }
     }
 
     // ==================== المراقبة وإعادة التوليد (نسخة مع تجميع الأحداث/debounce) ====================
@@ -812,7 +877,9 @@ public class Compiler {
         System.out.println("\n🚀 تشغيل خادم Flask...");
 
         // استخدم المسار الكامل لـ Python الذي يعمل عندك
-        String pythonCmd = "C:\\Users\\dell\\AppData\\Local\\Programs\\Python\\Python313\\python.exe";
+//        String pythonCmd = "C:\\Users\\scc\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe";
+        String pythonCmd = "py";
+
 
         ProcessBuilder pb = new ProcessBuilder(
                 pythonCmd, "Files/generated_app.py"
